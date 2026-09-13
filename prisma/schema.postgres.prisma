@@ -1,12 +1,11 @@
 // Temporary Prisma Schema for Neon PostgreSQL Client Generation
 datasource db {
   provider = "postgresql"
-  url      = env("NEON_DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/@prisma/client-postgres"
 }
 
 model User {
