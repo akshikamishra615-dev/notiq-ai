@@ -32343,7 +32343,27 @@ if (!IS_NETLIFY) {
 var server_default = app;
 
 // netlify/functions/api.ts
-var handler = (0, import_serverless_http.default)(server_default);
+var serverlessHandler = (0, import_serverless_http.default)(server_default);
+var handler = async (event, context) => {
+  try {
+    const result = await serverlessHandler(event, context);
+    return result;
+  } catch (err) {
+    console.error("[Netlify Function Handler Execution Error]:", err);
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "*"
+      },
+      body: JSON.stringify({
+        error: "Internal Serverless Execution Error",
+        details: err?.message || String(err)
+      })
+    };
+  }
+};
 export {
   handler
 };
