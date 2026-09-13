@@ -121,7 +121,7 @@ export async function sendOtpEmailViaMailjet(params: SendOtpEmailParams): Promis
 
   const apiKey = process.env.MAILJET_API_KEY;
   const secretKey = process.env.MAILJET_SECRET_KEY;
-  const fromEmail = process.env.MAILJET_FROM_EMAIL || 'akshikamishra615@gmail.com';
+  const fromEmail = process.env.MAILJET_FROM_EMAIL;
   const fromName = process.env.MAILJET_FROM_NAME || 'NOTIQ AI';
 
   const maskedTo = maskEmailForLogs(toEmail);
