@@ -1,0 +1,204 @@
+// NOTIQ AI Production Database Schema (Prisma / SQLite Engine)
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String            @id
+  fullName      String
+  email         String            @unique
+  phone         String?           @unique
+  avatar        String            @default("🎓")
+  passwordHash  String
+  salt          String
+  emailVerified Boolean           @default(false)
+  phoneVerified Boolean           @default(false)
+  isDeactivated Boolean           @default(false)
+  otpCode       String?
+  otpExpiresAt  Float?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  lastLogin     DateTime          @default(now())
+
+  profile       UserProfile?
+  workspaces    Workspace[]
+  stickyNotes   StickyNote[]
+  vaultNotes    VaultNote[]
+  chatHistory   AiChatHistory[]
+  flashcards    Flashcard[]
+  quizzes       Quiz[]
+  otps          OtpVerification[]
+  sessions      Session[]
+
+  @@index([email])
+}
+
+model UserProfile {
+  userId            String   @id
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  college           String?
+  course            String?
+  semester          String?
+  academicYear      String?
+  classGrade        String?
+  userType          String?  @default("Student")
+  subjectsJson      String   @default("[]")
+  learningGoals     String?
+  preferredLanguage String   @default("auto")
+  theme             String   @default("dark")
+  streak            Int      @default(0)
+  studyGoal         Int      @default(30)
+  timezone          String   @default("UTC")
+  xp                Int      @default(0)
+  level             Int      @default(1)
+}
+
+model OtpVerification {
+  id        String   @id
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String?
+  phone     String?
+  otpCode   String
+  expiresAt Float
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Session {
+  id           String   @id
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshToken String   @unique
+  deviceName   String   @default("Browser")
+  deviceType   String   @default("Desktop")
+  ipAddress    String   @default("127.0.0.1")
+  expiresAt    Float
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+model Workspace {
+  id            String          @id
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceName String
+  description   String?
+  icon          String          @default("📚")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  stickyNotes   StickyNote[]
+  flashcards    Flashcard[]
+  quizzes       Quiz[]
+  chatHistory   AiChatHistory[]
+
+  @@index([userId])
+}
+
+model StickyNote {
+  id           String      @id
+  summaryId    String?
+  workspaceId  String
+  workspace    Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  summaryText  String
+  bulletsJson  String      @default("[]")
+  keywordsJson String      @default("[]")
+  topic        String      @default("General Concepts")
+  pageNumber   String      @default("1")
+  priority     String      @default("medium")
+  color        String      @default("purple")
+  pinned       Boolean     @default(false)
+  rotation     Float       @default(0.0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  flashcards   Flashcard[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, workspaceId])
+}
+
+model Flashcard {
+  id          String      @id
+  userId      String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  stickyId    String?
+  sticky      StickyNote? @relation(fields: [stickyId], references: [id], onDelete: SetNull)
+  question    String
+  answer      String
+  difficulty  String      @default("medium")
+  mastered    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, workspaceId])
+}
+
+model Quiz {
+  id            String    @id
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId   String
+  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  question      String
+  optionsJson   String    @default("[]")
+  correctAnswer String
+  explanation   String?
+  marks         Int       @default(1)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, workspaceId])
+}
+
+model VaultNote {
+  id               String   @id
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title            String
+  isLocked         Boolean  @default(true)
+  lockType         String   @default("PIN")
+  encryptedContent String
+  category         String   @default("Personal")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model AiChatHistory {
+  id          String    @id
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender      String    @default("user")
+  message     String
+  response    String?
+  timestamp   DateTime  @default(now())
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([userId, workspaceId])
+}

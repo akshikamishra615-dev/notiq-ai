@@ -1,0 +1,210 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-purple: #6C3BFF;
+    --brand-pink: #FF6FB5;
+    --bg-primary: #0C0A15;
+    --bg-surface: #141028;
+    --bg-card: rgba(26, 20, 48, 0.7);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --text-primary: #F1F5F9;
+    --text-secondary: #CBD5E1;
+    --text-muted: #94A3B8;
+  }
+
+  html.light {
+    --brand-purple: #6C3BFF;
+    --brand-pink: #FF6FB5;
+    --bg-primary: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-card: #FFFFFF;
+    --border-color: #E2E8F0;
+    --text-primary: #111827;
+    --text-secondary: #4B5563;
+    --text-muted: #6B7280;
+  }
+
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-family: 'Poppins', sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+  }
+}
+
+.devanagari-text {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 16px;
+  line-height: 1.8;
+  font-feature-settings: "liga" 1, "clig" 1;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+  hyphens: none;
+  text-align: left;
+}
+
+/* V31.1 Exact Devanagari Typography Scale */
+.devanagari-title {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.devanagari-heading {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.devanagari-body {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.8;
+  text-align: left;
+  word-break: normal;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.devanagari-bullet {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.9;
+  text-align: left;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+.devanagari-keyword {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Typography Utility Classes */
+.font-poppins {
+  font-family: 'Poppins', sans-serif;
+}
+
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+.hero-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.page-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.3;
+}
+
+.card-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.button-text {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.body-text-en {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.body-text-hi {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(12, 10, 21, 0.4);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6C3BFF 0%, #FF6FB5 100%);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FF6FB5 0%, #6C3BFF 100%);
+}
+
+.glass-panel {
+  background: rgba(20, 16, 36, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+html.light .glass-panel {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+
+.glass-card {
+  background: rgba(26, 20, 48, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html.light .glass-card {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #6B7280;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #94A3B8;
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, #FF6FB5 0%, #6C3BFF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
