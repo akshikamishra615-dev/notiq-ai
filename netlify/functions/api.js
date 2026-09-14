@@ -31052,19 +31052,24 @@ var BackendSummaryGenerator = class {
    * Process and generate complete clean JSON response from rawText
    */
   static async processDocument(rawText, docTitle, requestedOutputLanguage = "auto", mode = "smart-summary", pages) {
-    const devanagariCount = (rawText.match(/[\u0900-\u097F]/g) || []).length;
-    const latinCount = (rawText.match(/[a-zA-Z]/g) || []).length;
+    let processedRaw = rawText;
+    if (!/[\u0900-\u097F]/.test(processedRaw)) {
+      processedRaw = HindiReconstructionService.convertKrutiDevToUnicode(processedRaw);
+    }
+    const devanagariCount = (processedRaw.match(/[\u0900-\u097F]/g) || []).length;
+    const latinCount = (processedRaw.match(/[a-zA-Z]/g) || []).length;
     const detectedLanguage = devanagariCount > latinCount * 0.2 || devanagariCount > 20 ? "hi" : "en";
     let outputLanguage = detectedLanguage;
     if (requestedOutputLanguage === "hi") outputLanguage = "hi";
     else if (requestedOutputLanguage === "en") outputLanguage = "en";
-    let cleanText = rawText;
+    let cleanText = processedRaw;
     if (detectedLanguage === "hi") {
-      cleanText = HindiReconstructionService.reconstruct(rawText);
+      cleanText = HindiReconstructionService.reconstruct(processedRaw);
     } else {
-      cleanText = HindiReconstructionService.cleanOCRCodes(rawText);
+      cleanText = HindiReconstructionService.cleanOCRCodes(processedRaw);
     }
-    if (outputLanguage === "hi" && detectedLanguage === "en") {
+    const isGenuineEnglish = detectedLanguage === "en" && /\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(cleanText);
+    if (outputLanguage === "hi" && detectedLanguage === "en" && isGenuineEnglish) {
       cleanText = await BackendTranslationEngine.translate(cleanText, "hi", "en");
       cleanText = HindiReconstructionService.reconstruct(cleanText);
     } else if (outputLanguage === "en" && detectedLanguage === "hi") {

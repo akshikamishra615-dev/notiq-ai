@@ -136,19 +136,33 @@ export const StickyNoteCard: React.FC<StickyNoteCardProps> = ({
   };
 
   const handleCopy = () => {
-    let titleText = cleanBulletMarker(note.title);
-    let bulletsText = note.bullets.slice(0, 5).map(b => '• ' + cleanBulletMarker(b)).join('\n');
+    const selection = window.getSelection()?.toString().trim();
+    if (selection && selection.length > 0) {
+      navigator.clipboard.writeText(selection).then(() => {
+        setCopied(true);
+        showToast('Selected text copied to clipboard!', 'success');
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        showToast('Failed to copy selected text.', 'error');
+      });
+    } else {
+      let titleText = cleanBulletMarker(note.title);
+      let bulletsText = note.bullets.slice(0, 5).map(b => '• ' + cleanBulletMarker(b)).join('\n');
 
-    if (isKrutiDev) {
-      titleText = convertUnicodeToKrutiDev(titleText);
-      bulletsText = convertUnicodeToKrutiDev(bulletsText);
+      if (isKrutiDev) {
+        titleText = convertUnicodeToKrutiDev(titleText);
+        bulletsText = convertUnicodeToKrutiDev(bulletsText);
+      }
+
+      const fullText = `# ${titleText}\n\n${bulletsText}`;
+      navigator.clipboard.writeText(fullText).then(() => {
+        setCopied(true);
+        showToast(isKrutiDev ? 'Kruti Dev Note copied!' : 'Note copied to clipboard!', 'success');
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        showToast('Failed to copy note.', 'error');
+      });
     }
-
-    const fullText = `# ${titleText}\n\n${bulletsText}`;
-    navigator.clipboard.writeText(fullText);
-    setCopied(true);
-    showToast(isKrutiDev ? 'Kruti Dev Note copied!' : 'Note copied to clipboard!', 'success');
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const handleDownloadPDF = async () => {
@@ -177,11 +191,8 @@ export const StickyNoteCard: React.FC<StickyNoteCardProps> = ({
     ? note.bullets.map(b => cleanBulletMarker(b)).filter(Boolean) 
     : [rawIntro];
 
-  // Up to 6 Important Revision Points in Preview
-  const mainBullets = allBullets.slice(0, 6);
-  while (mainBullets.length < 5 && allBullets.length > 0) {
-    mainBullets.push(allBullets[mainBullets.length % allBullets.length]);
-  }
+  // Up to 5 Important Revision Points in Preview
+  const mainBullets = allBullets.slice(0, 5);
 
   const isEnglishContent = !/[\u0900-\u097F]/.test((note.title || '') + ' ' + (note.summary || ''));
   const topicBadge = isEnglishContent ? `Topic ${pageLabel}` : `टॉपिक ${pageLabel}`;
@@ -194,7 +205,7 @@ export const StickyNoteCard: React.FC<StickyNoteCardProps> = ({
         animate={{ opacity: 1, scale: 1, rotate: note.pinned ? 0 : (note.rotation || 0) }}
         exit={{ opacity: 0, scale: 0.9 }}
         transition={{ duration: 0.25, ease: 'easeOut' }}
-        className={`relative group rounded-[20px] p-3.5 shadow-md hover:shadow-xl transition-all border ${style.bg} ${style.border} text-[#111111] flex flex-col justify-between select-none h-[255px] max-h-[260px] overflow-hidden ${
+        className={`relative group rounded-[20px] p-3.5 shadow-md hover:shadow-xl transition-all border ${style.bg} ${style.border} text-[#111111] flex flex-col justify-between select-text h-[255px] max-h-[260px] overflow-hidden ${
           isCanvasMode ? 'cursor-move' : ''
         }`}
       >
@@ -417,11 +428,25 @@ const ShowMoreDetailModal: React.FC<{
   const isEnglishContent = !/[\u0900-\u097F]/.test((note.title || '') + ' ' + (note.summary || ''));
 
   const handleCopy = () => {
-    const textToCopy = `# ${note.title}\n\nSummary:\n${note.summary}\n\nRevision Points:\n${note.bullets.map(b => '• ' + b).join('\n')}`;
-    navigator.clipboard.writeText(textToCopy);
-    setCopied(true);
-    showToast('Full explanation copied!', 'success');
-    setTimeout(() => setCopied(false), 2000);
+    const selection = window.getSelection()?.toString().trim();
+    if (selection && selection.length > 0) {
+      navigator.clipboard.writeText(selection).then(() => {
+        setCopied(true);
+        showToast('Selected text copied to clipboard!', 'success');
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        showToast('Failed to copy selected text.', 'error');
+      });
+    } else {
+      const textToCopy = `# ${note.title}\n\nSummary:\n${note.summary}\n\nRevision Points:\n${note.bullets.map(b => '• ' + b).join('\n')}`;
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        setCopied(true);
+        showToast('Full explanation copied!', 'success');
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        showToast('Failed to copy explanation.', 'error');
+      });
+    }
   };
 
   return (

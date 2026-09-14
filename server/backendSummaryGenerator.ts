@@ -34,9 +34,15 @@ export class BackendSummaryGenerator {
     mode: string = 'smart-summary',
     pages?: { pageNumber: number; text: string }[]
   ): Promise<BackendOCRProcessResponse> {
+    // 0. Convert Kruti Dev font before detecting language
+    let processedRaw = rawText;
+    if (!/[\u0900-\u097F]/.test(processedRaw)) {
+      processedRaw = HindiReconstructionService.convertKrutiDevToUnicode(processedRaw);
+    }
+
     // 1. Detect language
-    const devanagariCount = (rawText.match(/[\u0900-\u097F]/g) || []).length;
-    const latinCount = (rawText.match(/[a-zA-Z]/g) || []).length;
+    const devanagariCount = (processedRaw.match(/[\u0900-\u097F]/g) || []).length;
+    const latinCount = (processedRaw.match(/[a-zA-Z]/g) || []).length;
     const detectedLanguage: 'hi' | 'en' = (devanagariCount > latinCount * 0.2 || devanagariCount > 20) ? 'hi' : 'en';
 
     let outputLanguage: 'hi' | 'en' = detectedLanguage;
@@ -44,15 +50,16 @@ export class BackendSummaryGenerator {
     else if (requestedOutputLanguage === 'en') outputLanguage = 'en';
 
     // 2. Multi-stage OCR Cleanup & Hindi Reconstruction
-    let cleanText = rawText;
+    let cleanText = processedRaw;
     if (detectedLanguage === 'hi') {
-      cleanText = HindiReconstructionService.reconstruct(rawText);
+      cleanText = HindiReconstructionService.reconstruct(processedRaw);
     } else {
-      cleanText = HindiReconstructionService.cleanOCRCodes(rawText);
+      cleanText = HindiReconstructionService.cleanOCRCodes(processedRaw);
     }
 
-    // 3. Translation if target output language differs from detected language
-    if (outputLanguage === 'hi' && detectedLanguage === 'en') {
+    // 3. Translation ONLY if target output language differs and source is genuine clean English
+    const isGenuineEnglish = detectedLanguage === 'en' && /\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(cleanText);
+    if (outputLanguage === 'hi' && detectedLanguage === 'en' && isGenuineEnglish) {
       cleanText = await BackendTranslationEngine.translate(cleanText, 'hi', 'en');
       cleanText = HindiReconstructionService.reconstruct(cleanText);
     } else if (outputLanguage === 'en' && detectedLanguage === 'hi') {

@@ -61,6 +61,11 @@ export async function translateText(
   const src = sourceLang || (targetLang === 'hi' ? 'en' : 'hi');
   if (src === targetLang) return text;
 
+  // SAFETY GUARD: If target language is Hindi, but text ALREADY contains Devanagari Hindi Unicode, DO NOT translate it!
+  if (targetLang === 'hi' && /[\u0900-\u097F]/.test(text)) {
+    return text;
+  }
+
   const lower = text.trim().toLowerCase();
   if (EDUCATIONAL_DICTIONARY[lower]) {
     return EDUCATIONAL_DICTIONARY[lower][targetLang];

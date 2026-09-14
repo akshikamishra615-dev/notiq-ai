@@ -947,7 +947,7 @@ export async function generateStickyNotesFromText(
     notes = uniqueNotes;
   }
 
-  if (targetLanguage === 'hi' || (selectedLanguage === 'hi' && detectedLanguage !== 'hi')) {
+  if (targetLanguage !== detectedLanguage && detectedLanguage === 'en' && targetLanguage === 'hi') {
     notes = await translateStickyNotes(notes, targetLanguage, detectedLanguage, onProgress);
   }
 
