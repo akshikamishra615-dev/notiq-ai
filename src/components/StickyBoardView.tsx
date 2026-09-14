@@ -84,6 +84,21 @@ export const StickyBoardView: React.FC = () => {
   // Floating Story Side Panel / Modal State
   const [isStoryPanelOpen, setIsStoryPanelOpen] = useState(false);
   const [isStorySpeaking, setIsStorySpeaking] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isStoryPanelOpen) {
+        setIsStoryPanelOpen(false);
+      }
+    };
+    if (isStoryPanelOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isStoryPanelOpen]);
+
   const [bannerMode, setBannerMode] = useState<'quick' | 'story' | 'revision'>('quick');
 
   const [readingMode, setReadingMode] = useState<'quick' | 'detailed' | 'revision'>(() => {
@@ -662,25 +677,29 @@ export const StickyBoardView: React.FC = () => {
       {/* 2. V42.1 DISTRACTION-FREE CHAPTER STORY READER MODAL */}
       <AnimatePresence>
         {isStoryPanelOpen && currentSession?.storyNarrative && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div 
+            onClick={() => setIsStoryPanelOpen(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+          >
             <motion.div
+              onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="w-full max-w-3xl h-[90vh] bg-[#100c22] light:bg-white border border-brand-purple/30 light:border-slate-200 rounded-[28px] shadow-2xl p-5 sm:p-7 flex flex-col justify-between overflow-hidden relative text-slate-100 light:text-slate-900"
+              className="w-full max-w-3xl h-[90vh] bg-[#100c22] light:bg-white border border-brand-purple/30 light:border-slate-300 rounded-[28px] shadow-2xl p-4 sm:p-7 flex flex-col justify-between overflow-hidden relative text-slate-100 light:text-slate-900 my-auto"
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-3.5 border-b border-white/10 light:border-slate-200 shrink-0">
-                <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white shadow-md">
+              <div className="flex items-center justify-between pb-3.5 border-b border-white/10 light:border-slate-200 shrink-0 gap-2">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white shadow-md shrink-0">
                     <BookOpen className="w-5 h-5" />
                   </div>
-                  <div>
-                    <h2 className="text-base sm:text-lg font-extrabold text-white light:text-slate-900">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="text-base sm:text-lg font-extrabold text-white light:text-slate-900 break-words">
                       📖 Chapter Story Reader
                     </h2>
-                    <p className="text-xs text-slate-400 light:text-slate-600">
+                    <p className="text-xs text-slate-400 light:text-slate-600 truncate">
                       Distraction-free book reading experience • {currentSession?.language === 'hi' ? 'हिंदी' : 'English'}
                     </p>
                   </div>
@@ -688,28 +707,29 @@ export const StickyBoardView: React.FC = () => {
 
                 <button
                   onClick={() => setIsStoryPanelOpen(false)}
-                  className="p-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors cursor-pointer"
+                  aria-label="Close story reader"
+                  className="p-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors cursor-pointer shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Distraction-Free Book Reading Text Body (1.8 Line Spacing, Paragraphs Only) */}
-              <div className="flex-1 my-3 p-5 sm:p-7 rounded-2xl bg-[#0a0717] light:bg-slate-50 border border-white/10 light:border-slate-200 overflow-y-auto space-y-4 shadow-inner text-slate-100 light:text-slate-900 text-[14px] sm:text-[15px] leading-[1.8] font-normal scrollbar-none">
+              <div className="flex-1 my-3 p-4 sm:p-7 rounded-2xl bg-[#0a0717] light:bg-slate-50 border border-white/10 light:border-slate-200 overflow-y-auto space-y-4 shadow-inner text-slate-100 light:text-slate-900 text-[14px] sm:text-[15px] leading-[1.8] font-normal scrollbar-none">
                 {currentSession.storyNarrative.split('\n\n').map((para, pIdx) => {
                   const trimmed = para.trim();
                   if (!trimmed) return null;
                   
                   if (trimmed.startsWith('# ')) {
                     return (
-                      <h1 key={pIdx} className="text-xl sm:text-2xl font-black text-brand-pink light:text-purple-700 pt-2 pb-1 border-b border-brand-purple/20 light:border-slate-200">
+                      <h1 key={pIdx} className="text-xl sm:text-2xl font-black text-brand-pink light:text-purple-700 pt-2 pb-1 border-b border-brand-purple/20 light:border-slate-200 break-words">
                         {trimmed.replace(/^#\s*/, '')}
                       </h1>
                     );
                   }
                   if (trimmed.startsWith('## ')) {
                     return (
-                      <h2 key={pIdx} className="text-base sm:text-lg font-extrabold text-purple-300 light:text-purple-900 pt-3 pb-1 flex items-center gap-2">
+                      <h2 key={pIdx} className="text-base sm:text-lg font-extrabold text-purple-300 light:text-purple-900 pt-3 pb-1 flex items-center gap-2 break-words">
                         {trimmed.replace(/^##\s*/, '')}
                       </h2>
                     );
@@ -718,7 +738,7 @@ export const StickyBoardView: React.FC = () => {
                     return <hr key={pIdx} className="border-white/10 light:border-slate-200 my-3" />;
                   }
                   return (
-                    <p key={pIdx} className="text-slate-200 light:text-slate-800 text-justify">
+                    <p key={pIdx} className="text-slate-200 light:text-slate-800 text-justify break-words">
                       {trimmed}
                     </p>
                   );
@@ -726,10 +746,10 @@ export const StickyBoardView: React.FC = () => {
               </div>
 
               {/* Clean Footer Controls: Read Aloud + Copy + Close */}
-              <div className="pt-3 border-t border-white/10 light:border-slate-200 flex items-center justify-between gap-3 shrink-0">
+              <div className="pt-3 border-t border-white/10 light:border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
                 <button
                   onClick={handleToggleStorySpeech}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
                     isStorySpeaking
                       ? 'bg-rose-500 text-white animate-pulse shadow-md'
                       : 'bg-white/10 light:bg-slate-200 text-slate-200 light:text-slate-800 hover:bg-white/15 light:hover:bg-slate-300'
@@ -745,7 +765,7 @@ export const StickyBoardView: React.FC = () => {
                       navigator.clipboard.writeText(currentSession.storyNarrative || '');
                       showToast('Story copied to clipboard!', 'success');
                     }}
-                    className="px-4 py-2 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 hover:bg-white/10 light:hover:bg-slate-200 flex items-center gap-1.5 cursor-pointer"
+                    className="px-3.5 py-2 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 hover:bg-white/10 light:hover:bg-slate-200 flex items-center gap-1.5 cursor-pointer"
                   >
                     <Copy className="w-3.5 h-3.5" />
                     <span>Copy Story</span>
@@ -753,7 +773,7 @@ export const StickyBoardView: React.FC = () => {
 
                   <button
                     onClick={() => setIsStoryPanelOpen(false)}
-                    className="px-6 py-2 rounded-xl bg-gradient-to-r from-brand-purple to-brand-pink text-white font-extrabold text-xs hover:opacity-95 shadow-md cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-purple to-brand-pink text-white font-extrabold text-xs hover:opacity-95 shadow-md cursor-pointer"
                   >
                     Done Reading
                   </button>

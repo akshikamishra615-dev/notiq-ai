@@ -120,6 +120,7 @@ export const UploadView: React.FC = () => {
 
     try {
       let rawText = '';
+      let pdfPages: { pageNumber: number; text: string }[] | undefined = undefined;
       const isPDF = selectedFile.type === 'application/pdf' || selectedFile.name.endsWith('.pdf');
       const isImage = selectedFile.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(selectedFile.name);
 
@@ -128,15 +129,18 @@ export const UploadView: React.FC = () => {
           updateProgress(15, 'Step 1/4: Scanning ALL PDF pages with Dual-Language OCR...');
           const pdfOcrResult = await extractTextFromPDFWithOCR(selectedFile, language, (p, s) => updateProgress(p, s));
           rawText = pdfOcrResult.text;
+          pdfPages = pdfOcrResult.pages;
         } else {
           updateProgress(15, 'Step 1/4: Extracting text from PDF pages...');
           try {
             const pdfResult = await extractTextFromPDF(selectedFile, (p, s) => updateProgress(p, s));
             rawText = pdfResult.text;
+            pdfPages = pdfResult.pages;
           } catch {
             updateProgress(30, 'Step 1/4: PDF text empty or scanned. Switching to Multi-Page Dual OCR...');
             const pdfOcrResult = await extractTextFromPDFWithOCR(selectedFile, language, (p: number, s: string) => updateProgress(p, s));
             rawText = pdfOcrResult.text;
+            pdfPages = pdfOcrResult.pages;
           }
         }
       } else if (isImage) {
@@ -156,7 +160,8 @@ export const UploadView: React.FC = () => {
         summaryMode,
         language,
         settings,
-        (progress, step) => updateProgress(progress, step)
+        (progress, step) => updateProgress(progress, step),
+        pdfPages
       );
 
       const newSession: DocumentSession = {

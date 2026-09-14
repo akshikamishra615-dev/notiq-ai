@@ -13,6 +13,7 @@ import {
   Palette, 
   Check, 
   ChevronRight,
+  ChevronLeft,
   Sparkles,
   X,
   BrainCircuit,
@@ -397,6 +398,20 @@ const ShowMoreDetailModal: React.FC<{
   const { showToast } = useApp();
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const isEnglishContent = !/[\u0900-\u097F]/.test((note.title || '') + ' ' + (note.summary || ''));
@@ -410,57 +425,75 @@ const ShowMoreDetailModal: React.FC<{
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#141028] light:bg-white border border-brand-purple/40 light:border-slate-200 rounded-[24px] p-6 shadow-2xl text-slate-100 light:text-slate-900 relative overflow-hidden max-h-[90vh] flex flex-col justify-between">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-2xl bg-[#141028] light:bg-white border border-brand-purple/40 light:border-slate-300 rounded-2xl sm:rounded-[24px] p-4 sm:p-6 shadow-2xl text-slate-100 light:text-slate-900 relative overflow-hidden my-auto max-h-[92vh] flex flex-col justify-between"
+      >
         
-        {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-white/10 light:border-slate-200 mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white shadow-md">
+        {/* Header Bar: Back Button + Topic Badge & Title + Close X */}
+        <div className="flex items-start justify-between gap-2 pb-3 border-b border-white/10 light:border-slate-200 mb-3 shrink-0">
+          <div className="flex items-start gap-2 min-w-0 flex-1">
+            <button
+              onClick={onClose}
+              title="Go Back"
+              className="mt-0.5 px-2 py-1 rounded-xl bg-white/10 light:bg-slate-100 hover:bg-white/20 light:hover:bg-slate-200 text-slate-300 light:text-slate-700 font-semibold text-xs flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden xs:inline">Back</span>
+            </button>
+
+            <div className="p-2 rounded-xl bg-gradient-to-tr from-brand-purple to-brand-pink text-white shadow-md shrink-0">
               <BookOpen className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-pink light:text-purple-700">
+
+            <div className="min-w-0 flex-1">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-brand-pink light:text-purple-700 block truncate">
                 {isEnglishContent ? `Topic ${note.chapter || '1'} Details` : `टॉपिक ${note.chapter || '1'} विस्तृत व्याख्या`}
               </span>
-              <h3 className="text-base font-extrabold text-white light:text-slate-900 truncate max-w-md">
+              <h3 className="text-sm sm:text-base font-extrabold text-white light:text-slate-900 break-words leading-tight">
                 {note.title}
               </h3>
             </div>
           </div>
+
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors cursor-pointer"
+            aria-label="Close modal"
+            className="p-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900 transition-colors cursor-pointer shrink-0 ml-1"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-none text-xs sm:text-sm">
+        <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 scrollbar-none text-xs sm:text-sm">
           
           {/* Detailed Summary / इस पेज में क्या पढ़ेंगे */}
-          <div className="p-4 rounded-2xl bg-white/5 light:bg-purple-50/60 border border-white/10 light:border-purple-200 space-y-1.5">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-white/5 light:bg-purple-50/70 border border-white/10 light:border-purple-200 space-y-1.5">
             <span className="text-xs font-extrabold text-brand-pink light:text-purple-700 flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5" />
               {isEnglishContent ? 'What we will study on this page' : 'इस पेज में क्या पढ़ेंगे'}
             </span>
-            <p className="text-slate-200 light:text-slate-800 leading-relaxed font-sans text-justify">
+            <p className="text-slate-200 light:text-slate-800 leading-relaxed font-sans text-justify break-words">
               {note.summary}
             </p>
           </div>
 
           {/* 5 Meaningful Revision Points / महत्वपूर्ण बिंदु */}
-          <div className="p-4 rounded-2xl bg-black/40 light:bg-slate-50 border border-white/10 light:border-slate-200 space-y-2">
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-black/40 light:bg-slate-50 border border-white/10 light:border-slate-200 space-y-2">
             <span className="text-xs font-extrabold text-purple-300 light:text-purple-900 flex items-center gap-1.5">
               <span>📌</span>
               <span>{isEnglishContent ? 'Key Revision Points' : 'महत्वपूर्ण बिंदु'}</span>
             </span>
             <ul className="space-y-2">
               {note.bullets.slice(0, 5).map((b, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-slate-200 light:text-slate-800 leading-relaxed text-justify">
+                <li key={i} className="flex items-start gap-2 text-slate-200 light:text-slate-800 leading-relaxed text-justify break-words">
                   <span className="text-brand-pink light:text-purple-600 font-bold shrink-0 mt-0.5">•</span>
-                  <span>{cleanBulletMarker(b)}</span>
+                  <span className="break-words flex-1">{cleanBulletMarker(b)}</span>
                 </li>
               ))}
             </ul>
@@ -468,13 +501,13 @@ const ShowMoreDetailModal: React.FC<{
 
           {/* Important Keywords */}
           {note.keywords && note.keywords.length > 0 && (
-            <div className="p-3.5 rounded-2xl bg-white/5 light:bg-amber-50/60 border border-white/10 light:border-amber-200 space-y-1.5">
+            <div className="p-3 sm:p-3.5 rounded-2xl bg-white/5 light:bg-amber-50/70 border border-white/10 light:border-amber-200 space-y-1.5">
               <span className="text-xs font-extrabold text-amber-300 light:text-amber-900">
                 {isEnglishContent ? 'Important Keywords' : 'मुख्य पारिभाषिक शब्द'}
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {note.keywords.map((kw, idx) => (
-                  <span key={idx} className="px-2.5 py-1 rounded-xl bg-amber-500/10 light:bg-amber-100 border border-amber-500/30 light:border-amber-300 text-amber-200 light:text-amber-900 text-xs font-semibold">
+                  <span key={idx} className="px-2.5 py-1 rounded-xl bg-amber-500/10 light:bg-amber-100 border border-amber-500/30 light:border-amber-300 text-amber-200 light:text-amber-900 text-xs font-semibold break-words">
                     {kw}
                   </span>
                 ))}
@@ -484,22 +517,22 @@ const ShowMoreDetailModal: React.FC<{
 
         </div>
 
-        {/* Footer Actions: Practice AI + Copy + Close */}
-        <div className="flex items-center justify-between pt-4 border-t border-white/10 light:border-slate-200 mt-3 gap-2">
+        {/* Footer Actions: Practice AI + Copy + PDF + PNG + Close */}
+        <div className="flex flex-wrap items-center justify-between pt-3 sm:pt-4 border-t border-white/10 light:border-slate-200 mt-3 gap-2 shrink-0">
           <button
             onClick={onPractice}
-            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-purple to-brand-pink text-white font-extrabold text-xs flex items-center gap-1.5 hover:opacity-95 shadow-md cursor-pointer"
+            className="px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-gradient-to-r from-brand-purple to-brand-pink text-white font-extrabold text-xs flex items-center gap-1.5 hover:opacity-95 shadow-md cursor-pointer shrink-0"
           >
             <BrainCircuit className="w-4 h-4" />
             <span>{isEnglishContent ? 'Practice AI Quiz' : 'Practice AI अभ्यास'}</span>
           </button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleCopy}
-              className="px-3 py-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-2 sm:px-3 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1 cursor-pointer"
             >
-              {copied ? <Check className="w-4 h-4 text-emerald-400 light:text-emerald-600" /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400 light:text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Copied' : 'Copy'}</span>
             </button>
             <button
@@ -508,9 +541,9 @@ const ShowMoreDetailModal: React.FC<{
                 await exportSingleStickyNoteAsPDF(note);
                 showToast('Downloaded sticky card PDF!', 'success');
               }}
-              className="px-3 py-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-2 sm:px-3 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1 cursor-pointer"
             >
-              <FileText className="w-4 h-4 text-brand-pink light:text-purple-600" />
+              <FileText className="w-3.5 h-3.5 text-brand-pink light:text-purple-600" />
               <span>PDF</span>
             </button>
             <button
@@ -519,14 +552,14 @@ const ShowMoreDetailModal: React.FC<{
                 await exportSingleStickyNoteAsImage(note);
                 showToast('Downloaded sticky card image!', 'success');
               }}
-              className="px-3 py-2 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-2 sm:px-3 rounded-xl bg-white/5 light:bg-slate-100 hover:bg-white/10 light:hover:bg-slate-200 text-xs font-bold text-slate-300 light:text-slate-700 flex items-center gap-1 cursor-pointer"
             >
-              <ImageIcon className="w-4 h-4 text-purple-400 light:text-purple-600" />
+              <ImageIcon className="w-3.5 h-3.5 text-purple-400 light:text-purple-600" />
               <span>PNG</span>
             </button>
             <button
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-white/10 light:bg-slate-200 hover:bg-white/20 light:hover:bg-slate-300 text-xs font-bold text-white light:text-slate-900 cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-white/10 light:bg-slate-200 hover:bg-white/20 light:hover:bg-slate-300 text-xs font-bold text-white light:text-slate-900 cursor-pointer"
             >
               Close
             </button>

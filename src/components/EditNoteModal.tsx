@@ -52,6 +52,20 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
     }
   }, [initialNote, isOpen]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleAddBullet = () => {
@@ -86,8 +100,14 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-[#141028] light:bg-white border border-white/15 light:border-slate-200 rounded-3xl p-6 sm:p-8 shadow-2xl shadow-brand-purple/20 text-slate-100 light:text-slate-900 max-h-[90vh] overflow-y-auto">
+    <div 
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200 overflow-y-auto"
+    >
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-lg bg-[#141028] light:bg-white border border-white/15 light:border-slate-300 rounded-3xl p-5 sm:p-8 shadow-2xl shadow-brand-purple/20 text-slate-100 light:text-slate-900 max-h-[92vh] overflow-y-auto my-auto"
+      >
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-white/10 light:border-slate-200 mb-6">

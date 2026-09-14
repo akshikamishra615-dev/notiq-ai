@@ -30873,7 +30873,7 @@ var BackendSummaryGenerator = class {
   /**
    * Process and generate complete clean JSON response from rawText
    */
-  static async processDocument(rawText, docTitle, requestedOutputLanguage = "auto", mode = "smart-summary") {
+  static async processDocument(rawText, docTitle, requestedOutputLanguage = "auto", mode = "smart-summary", pages) {
     const devanagariCount = (rawText.match(/[\u0900-\u097F]/g) || []).length;
     const latinCount = (rawText.match(/[a-zA-Z]/g) || []).length;
     const detectedLanguage = devanagariCount > latinCount * 0.2 || devanagariCount > 20 ? "hi" : "en";
@@ -30895,92 +30895,99 @@ var BackendSummaryGenerator = class {
     const sentences = cleanText.split(/(?<=[.?!।\n])\s+/).map((s) => s.trim()).filter((s) => s.length > 5);
     const overviewSentences = sentences.slice(0, 5);
     const summary = overviewSentences.join(" ") || (outputLanguage === "hi" ? `${docTitle} \u0915\u093E \u0938\u0902\u092A\u0942\u0930\u094D\u0923 \u0905\u0927\u094D\u092F\u093E\u092F \u0938\u093E\u0930\u093E\u0902\u0936 \u090F\u0935\u0902 \u092E\u0941\u0916\u094D\u092F \u092C\u093F\u0902\u0926\u0941\u0964` : `Comprehensive chapter summary of ${docTitle}.`);
-    const totalSentences = sentences.length;
-    const targetCardCount = totalSentences >= 20 ? 6 : 5;
-    const sentencesPerCard = Math.max(2, Math.ceil(totalSentences / targetCardCount));
     const stickyNotes = [];
-    const usedBulletsGlobal = /* @__PURE__ */ new Set();
-    const topicTitlesHi = [
-      "\u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092A\u0930\u093F\u091A\u092F \u090F\u0935\u0902 \u092E\u0941\u0916\u094D\u092F \u092A\u0943\u0937\u094D\u0920\u092D\u0942\u092E\u093F",
-      "\u092E\u0941\u0916\u094D\u092F \u092A\u093E\u0924\u094D\u0930 / \u092E\u0941\u0916\u094D\u092F \u0905\u0935\u0927\u093E\u0930\u0923\u093E \u090F\u0935\u0902 \u0928\u093F\u092F\u092E",
-      "\u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u0918\u091F\u0928\u093E\u090F\u0901 / \u092A\u094D\u0930\u0915\u094D\u0930\u093F\u092F\u093E \u090F\u0935\u0902 \u0915\u093E\u0930\u094D\u092F\u092A\u094D\u0930\u0923\u093E\u0932\u0940",
-      "\u0915\u093E\u0930\u0923, \u092A\u094D\u0930\u092D\u093E\u0935 \u0914\u0930 \u092E\u0941\u0916\u094D\u092F \u0924\u0925\u094D\u092F",
-      "\u0928\u093F\u0937\u094D\u0915\u0930\u094D\u0937, \u0938\u0902\u0926\u0947\u0936 \u0914\u0930 \u092A\u0930\u0940\u0915\u094D\u0937\u093E \u0915\u0947 \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u092C\u093F\u0902\u0926\u0941",
-      "\u092A\u0942\u0930\u0947 \u0905\u0927\u094D\u092F\u093E\u092F \u0915\u0940 \u0905\u0902\u0924\u093F\u092E \u0924\u094D\u0935\u0930\u093F\u0924 \u092A\u0941\u0928\u0930\u093E\u0935\u0943\u0924\u094D\u0924\u093F"
-    ];
-    const topicTitlesEn = [
-      "Chapter Overview & Historical Foundation",
-      "Core Characters & Foundational Theories",
-      "Crucial Developments & Operating Mechanics",
-      "Underlying Causes, Impacts & Core Facts",
-      "Conclusions, Themes & Exam Revision Points",
-      "Comprehensive Final Rapid Summary"
-    ];
-    for (let cardIdx = 0; cardIdx < targetCardCount; cardIdx++) {
-      const startIdx = cardIdx * sentencesPerCard;
-      const endIdx = Math.min(totalSentences, (cardIdx + 1) * sentencesPerCard);
-      const chunkSentences = sentences.slice(startIdx, endIdx);
-      if (chunkSentences.length === 0) continue;
-      const topicList = outputLanguage === "hi" ? topicTitlesHi : topicTitlesEn;
-      const chunkTopic = topicList[cardIdx % topicList.length];
-      const noteSummary = chunkSentences.slice(0, 3).join(" ") || (outputLanguage === "hi" ? `${chunkTopic}: \u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u090F\u0935\u0902 \u092A\u0930\u0940\u0915\u094D\u0937\u093E-\u0909\u092A\u092F\u094B\u0917\u0940 \u092D\u093E\u0917\u0964` : `${chunkTopic}: Essential revision section of the chapter.`);
-      const bullets = [];
-      for (const sent of chunkSentences) {
-        const cleanS = sent.replace(/^[#\s•\-\*\d\.:\)>·▪■□◆◇✓✔★☆✦✧\[\]]+/g, "").trim();
-        if (cleanS.length > 8 && !usedBulletsGlobal.has(cleanS)) {
-          bullets.push(cleanS);
-          usedBulletsGlobal.add(cleanS);
+    if (pages && pages.length > 0) {
+      for (let i = 0; i < pages.length; i++) {
+        const pageObj = pages[i];
+        const pageNum = pageObj.pageNumber || i + 1;
+        const pageRawText = pageObj.text || "";
+        const pageClean = outputLanguage === "hi" ? HindiReconstructionService.reconstruct(pageRawText) : HindiReconstructionService.cleanOCRCodes(pageRawText);
+        const pageSentences = pageClean.split(/(?<=[.?!।\n])\s+/).map((s) => s.trim()).filter((s) => s.length > 5);
+        const pageHeading = pageSentences[0] || (outputLanguage === "hi" ? `\u092A\u0943\u0937\u094D\u0920 ${pageNum} \u0905\u0927\u094D\u092F\u092F\u0928 \u0928\u094B\u091F\u094D\u0938` : `Page ${pageNum} Study Notes`);
+        const noteTitle = outputLanguage === "hi" ? `\u092A\u0947\u091C ${pageNum}: ${pageHeading.slice(0, 40)}` : `Page ${pageNum}: ${pageHeading.slice(0, 40)}`;
+        const bullets = pageSentences.slice(0, 8);
+        while (bullets.length < 8) {
+          bullets.push(outputLanguage === "hi" ? `\u092A\u0943\u0937\u094D\u0920 ${pageNum} \u0915\u093E \u092A\u0930\u0940\u0915\u094D\u0937\u093E-\u0909\u092A\u092F\u094B\u0917\u0940 \u0938\u093E\u0930\u093E\u0902\u0936 \u092C\u093F\u0902\u0926\u0941\u0964` : `Page ${pageNum} key examination revision takeaway.`);
         }
-        if (bullets.length >= 10) break;
+        stickyNotes.push({
+          id: `sticky-page-${pageNum}-${Date.now()}-${i}`,
+          title: noteTitle,
+          summary: pageSentences.slice(0, 2).join(" ") || noteTitle,
+          bullets: bullets.slice(0, 10),
+          keywords: [pageHeading.slice(0, 20), `Page ${pageNum}`],
+          topic: pageHeading.slice(0, 30),
+          pageNumber: String(pageNum),
+          priority: i === 0 ? "high" : "medium",
+          color: ["purple", "pink", "yellow", "blue", "green", "orange"][i % 6]
+        });
       }
-      if (bullets.length < 8) {
-        const clauses = chunkSentences.join(" ").split(/[,;।]/).map((c) => c.trim()).filter((c) => c.length > 10 && !usedBulletsGlobal.has(c));
-        for (const cl of clauses) {
+    } else {
+      const totalSentences = sentences.length;
+      const targetCardCount = totalSentences >= 20 ? 6 : 5;
+      const sentencesPerCard = Math.max(2, Math.ceil(totalSentences / targetCardCount));
+      const usedBulletsGlobal = /* @__PURE__ */ new Set();
+      const topicTitlesHi = [
+        "\u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092A\u0930\u093F\u091A\u092F \u090F\u0935\u0902 \u092E\u0941\u0916\u094D\u092F \u092A\u0943\u0937\u094D\u0920\u092D\u0942\u092E\u093F",
+        "\u092E\u0941\u0916\u094D\u092F \u092A\u093E\u0924\u094D\u0930 / \u092E\u0941\u0916\u094D\u092F \u0905\u0935\u0927\u093E\u0930\u0923\u093E \u090F\u0935\u0902 \u0928\u093F\u092F\u092E",
+        "\u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u0918\u091F\u0928\u093E\u090F\u0901 / \u092A\u094D\u0930\u0915\u094D\u0930\u093F\u092F\u093E \u090F\u0935\u0902 \u0915\u093E\u0930\u094D\u092F\u092A\u094D\u0930\u0923\u093E\u0932\u0940",
+        "\u0915\u093E\u0930\u0923, \u092A\u094D\u0930\u092D\u093E\u0935 \u0914\u0930 \u092E\u0941\u0916\u094D\u092F \u0924\u0925\u094D\u092F",
+        "\u0928\u093F\u0937\u094D\u0915\u0930\u094D\u0937, \u0938\u0902\u0926\u0947\u0936 \u0914\u0930 \u092A\u0930\u0940\u0915\u094D\u0937\u093E \u0915\u0947 \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u092C\u093F\u0902\u0926\u0941",
+        "\u092A\u0942\u0930\u0947 \u0905\u0927\u094D\u092F\u093E\u092F \u0915\u0940 \u0905\u0902\u0924\u093F\u092E \u0924\u094D\u0935\u0930\u093F\u0924 \u092A\u0941\u0928\u0930\u093E\u0935\u0943\u0924\u094D\u0924\u093F"
+      ];
+      const topicTitlesEn = [
+        "Chapter Overview & Historical Foundation",
+        "Core Characters & Foundational Theories",
+        "Crucial Developments & Operating Mechanics",
+        "Underlying Causes, Impacts & Core Facts",
+        "Conclusions, Themes & Exam Revision Points",
+        "Comprehensive Final Rapid Summary"
+      ];
+      for (let cardIdx = 0; cardIdx < targetCardCount; cardIdx++) {
+        const startIdx = cardIdx * sentencesPerCard;
+        const endIdx = Math.min(totalSentences, (cardIdx + 1) * sentencesPerCard);
+        const chunkSentences = sentences.slice(startIdx, endIdx);
+        if (chunkSentences.length === 0) continue;
+        const topicList = outputLanguage === "hi" ? topicTitlesHi : topicTitlesEn;
+        const chunkTopic = topicList[cardIdx % topicList.length];
+        const noteSummary = chunkSentences.slice(0, 3).join(" ") || (outputLanguage === "hi" ? `${chunkTopic}: \u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u090F\u0935\u0902 \u092A\u0930\u0940\u0915\u094D\u0937\u093E-\u0909\u092A\u092F\u094B\u0917\u0940 \u092D\u093E\u0917\u0964` : `${chunkTopic}: Essential revision section of the chapter.`);
+        const bullets = [];
+        for (const sent of chunkSentences) {
+          const cleanS = sent.replace(/^[#\s•\-\*\d\.:\)>·▪■□◆◇✓✔★☆✦✧\[\]]+/g, "").trim();
+          if (cleanS.length > 8 && !usedBulletsGlobal.has(cleanS)) {
+            bullets.push(cleanS);
+            usedBulletsGlobal.add(cleanS);
+          }
           if (bullets.length >= 10) break;
-          bullets.push(cl);
-          usedBulletsGlobal.add(cl);
         }
-      }
-      const examBulletsHi = [
-        `\u0907\u0938 \u092D\u093E\u0917 (${chunkTopic}) \u092E\u0947\u0902 \u0909\u0932\u094D\u0932\u093F\u0916\u093F\u0924 \u092E\u0941\u0916\u094D\u092F \u092C\u093F\u0902\u0926\u0941 \u092A\u0930\u0940\u0915\u094D\u0937\u093E \u0915\u0947 \u0926\u0943\u0937\u094D\u091F\u093F\u0915\u094B\u0923 \u0938\u0947 \u0905\u0924\u094D\u092F\u0902\u0924 \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u0939\u0948\u0902\u0964`,
-        `\u0935\u093F\u0926\u094D\u092F\u093E\u0930\u094D\u0925\u093F\u092F\u094B\u0902 \u0915\u094B \u0907\u0938 \u0916\u0902\u0921 \u092E\u0947\u0902 \u0926\u093F\u090F \u0917\u090F \u092A\u094D\u0930\u092E\u0941\u0916 \u0928\u093F\u092F\u092E\u094B\u0902, \u0924\u093F\u0925\u093F\u092F\u094B\u0902 \u0914\u0930 \u0924\u0930\u094D\u0915\u094B\u0902 \u0915\u094B \u0935\u093F\u0936\u0947\u0937 \u0930\u0942\u092A \u0938\u0947 \u092F\u093E\u0926 \u0930\u0916\u0928\u093E \u091A\u093E\u0939\u093F\u090F\u0964`,
-        `\u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092F\u0939 \u0905\u0902\u0936 \u0935\u093F\u0937\u092F \u0915\u0940 \u0935\u094D\u092F\u093E\u0935\u0939\u093E\u0930\u093F\u0915 \u0938\u092E\u091D \u0914\u0930 \u0935\u093F\u0936\u094D\u0932\u0947\u0937\u0923\u093E\u0924\u094D\u092E\u0915 \u092A\u094D\u0930\u0936\u094D\u0928\u094B\u0902 \u0915\u0947 \u0909\u0924\u094D\u0924\u0930 \u0939\u0947\u0924\u0941 \u0938\u0939\u093E\u092F\u0915 \u0939\u0948\u0964`,
-        `\u092E\u0941\u0916\u094D\u092F \u0938\u093F\u0926\u094D\u0927\u093E\u0902\u0924\u094B\u0902 \u0915\u093E \u0938\u0939\u0940 \u092A\u094D\u0930\u092F\u094B\u0917 \u0939\u0940 \u092A\u0930\u0940\u0915\u094D\u0937\u093E \u092E\u0947\u0902 \u0938\u091F\u0940\u0915 \u0914\u0930 \u0909\u091A\u094D\u091A \u0905\u0902\u0915 \u0926\u093F\u0932\u093E\u0928\u0947 \u092E\u0947\u0902 \u092E\u0926\u0926 \u0915\u0930\u0924\u093E \u0939\u0948\u0964`,
-        `\u092F\u0939 \u0916\u0902\u0921 \u092A\u093E\u0920 \u0915\u0947 \u0915\u0947\u0902\u0926\u094D\u0930\u0940\u092F \u0935\u093F\u091A\u093E\u0930 \u0915\u094B \u092A\u0941\u0937\u094D\u091F \u0915\u0930\u0924\u093E \u0939\u0948 \u0924\u0925\u093E \u0905\u0917\u0932\u0947 \u092D\u093E\u0917 \u0915\u0940 \u092A\u0943\u0937\u094D\u0920\u092D\u0942\u092E\u093F \u0924\u0948\u092F\u093E\u0930 \u0915\u0930\u0924\u093E \u0939\u0948\u0964`,
-        `\u092A\u093E\u0920\u094D\u092F\u092A\u0941\u0938\u094D\u0924\u0915 \u0915\u0947 \u0905\u0928\u0941\u0938\u093E\u0930 \u0907\u0938 \u0905\u0902\u0936 \u0938\u0947 \u0932\u0918\u0941 \u090F\u0935\u0902 \u0926\u0940\u0930\u094D\u0918 \u0909\u0924\u094D\u0924\u0930\u0940\u092F \u092A\u094D\u0930\u0936\u094D\u0928 \u092A\u0942\u091B\u0947 \u091C\u093E\u0928\u0947 \u0915\u0940 \u092A\u094D\u0930\u092C\u0932 \u0938\u0902\u092D\u093E\u0935\u0928\u093E \u0939\u0948\u0964`,
-        `\u092F\u0939\u093E\u0901 \u0935\u0930\u094D\u0923\u093F\u0924 \u092A\u094D\u0930\u092E\u0941\u0916 \u0924\u0925\u094D\u092F\u094B\u0902 \u0915\u093E \u0938\u093E\u0930\u093E\u0902\u0936 \u0924\u094D\u0935\u0930\u093F\u0924 \u092A\u0941\u0928\u0930\u093E\u0935\u0943\u0924\u094D\u0924\u093F (Quick Revision) \u0915\u0947 \u0932\u093F\u090F \u0906\u0926\u0930\u094D\u0936 \u0939\u0948\u0964`,
-        `\u0938\u092E\u0917\u094D\u0930 \u0930\u0942\u092A \u0938\u0947 \u092F\u0939 \u0935\u093F\u0937\u092F-\u0935\u0938\u094D\u0924\u0941 \u0935\u093F\u0926\u094D\u092F\u093E\u0930\u094D\u0925\u093F\u092F\u094B\u0902 \u0915\u094B \u092A\u0942\u0930\u0947 \u0905\u0927\u094D\u092F\u093E\u092F \u0915\u0940 \u0938\u094D\u092A\u0937\u094D\u091F \u0938\u092E\u091D \u092A\u094D\u0930\u0926\u093E\u0928 \u0915\u0930\u0924\u0940 \u0939\u0948\u0964`
-      ];
-      const examBulletsEn = [
-        `The concepts highlighted in "${chunkTopic}" carry high importance for examination revision.`,
-        `Students should memorize the core rules, dates, and arguments emphasized in this section.`,
-        `This section aids in developing analytical depth for answering structured examination questions.`,
-        `Accurate application of the stated principles ensures high-scoring written responses.`,
-        `This content connects foundational theories to real-world applications and outcomes.`,
-        `Key factual definitions provided here serve as critical evidence for concise answers.`,
-        `The summary points detailed above are tailored for rapid last-minute revision.`,
-        `Overall, this topic solidifies conceptual clarity and comprehensive chapter mastery.`
-      ];
-      const fallbackExamBullets = outputLanguage === "hi" ? examBulletsHi : examBulletsEn;
-      let fbIdx = 0;
-      while (bullets.length < 8) {
-        const candidate = fallbackExamBullets[fbIdx % fallbackExamBullets.length];
-        if (!bullets.includes(candidate)) {
-          bullets.push(candidate);
+        const fallbackExamBullets = outputLanguage === "hi" ? [
+          `\u0907\u0938 \u092D\u093E\u0917 (${chunkTopic}) \u092E\u0947\u0902 \u0909\u0932\u094D\u0932\u093F\u0916\u093F\u0924 \u092E\u0941\u0916\u094D\u092F \u092C\u093F\u0902\u0926\u0941 \u092A\u0930\u0940\u0915\u094D\u0937\u093E \u0915\u0947 \u0926\u0943\u0937\u094D\u091F\u093F\u0915\u094B\u0923 \u0938\u0947 \u0905\u0924\u094D\u092F\u0902\u0924 \u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923 \u0939\u0948\u0902\u0964`,
+          `\u0935\u093F\u0926\u094D\u092F\u093E\u0930\u094D\u0925\u093F\u092F\u094B\u0902 \u0915\u094B \u0907\u0938 \u0916\u0902\u0921 \u092E\u0947\u0902 \u0926\u093F\u090F \u0917\u090F \u092A\u094D\u0930\u092E\u0941\u0916 \u0928\u093F\u092F\u092E\u094B\u0902, \u0924\u093F\u0925\u093F\u092F\u094B\u0902 \u0914\u0930 \u0924\u0930\u094D\u0915\u094B\u0902 \u0915\u094B \u0935\u093F\u0936\u0947\u0937 \u0930\u0942\u092A \u0938\u0947 \u092F\u093E\u0926 \u0930\u0916\u0928\u093E \u091A\u093E\u0939\u093F\u090F\u0964`,
+          `\u0905\u0927\u094D\u092F\u093E\u092F \u0915\u093E \u092F\u0939 \u0905\u0902\u0936 \u0935\u093F\u0937\u092F \u0915\u0940 \u0935\u094D\u092F\u093E\u0935\u0939\u093E\u0930\u093F\u0915 \u0938\u092E\u091D \u0914\u0930 \u0935\u093F\u0936\u094D\u0932\u0947\u0937\u0923\u093E\u0924\u094D\u092E\u0915 \u092A\u094D\u0930\u0936\u094D\u0928\u094B\u0902 \u0915\u0947 \u0909\u0924\u094D\u0924\u0930 \u0939\u0947\u0924\u0941 \u0938\u0939\u093E\u092F\u0915 \u0939\u0948\u0964`
+        ] : [
+          `The concepts highlighted in "${chunkTopic}" carry high importance for examination revision.`,
+          `Students should memorize the core rules, dates, and arguments emphasized in this section.`,
+          `This section aids in developing analytical depth for answering structured examination questions.`
+        ];
+        let fbIdx = 0;
+        while (bullets.length < 8) {
+          const candidate = fallbackExamBullets[fbIdx % fallbackExamBullets.length];
+          if (!bullets.includes(candidate)) {
+            bullets.push(candidate);
+          }
+          fbIdx++;
         }
-        fbIdx++;
+        stickyNotes.push({
+          id: `sticky-${Date.now()}-${cardIdx + 1}`,
+          title: chunkTopic,
+          summary: noteSummary,
+          bullets: bullets.slice(0, 10),
+          keywords: [chunkTopic, outputLanguage === "hi" ? "\u092A\u0930\u0940\u0915\u094D\u0937\u093E \u092C\u093F\u0902\u0926\u0941" : "Exam Point"],
+          topic: chunkTopic,
+          pageNumber: String(cardIdx + 1),
+          priority: cardIdx === 0 ? "high" : "medium",
+          color: ["purple", "pink", "yellow", "blue", "green", "orange"][cardIdx % 6]
+        });
       }
-      stickyNotes.push({
-        id: `sticky-${Date.now()}-${cardIdx + 1}`,
-        title: chunkTopic,
-        summary: noteSummary,
-        bullets: bullets.slice(0, 10),
-        keywords: [chunkTopic, outputLanguage === "hi" ? "\u092A\u0930\u0940\u0915\u094D\u0937\u093E \u092C\u093F\u0902\u0926\u0941" : "Exam Point"],
-        topic: chunkTopic,
-        pageNumber: String(cardIdx + 1),
-        priority: cardIdx === 0 ? "high" : "medium",
-        color: ["purple", "pink", "yellow", "blue", "green", "orange"][cardIdx % 6]
-      });
     }
     return {
       status: "SUCCESS",
@@ -32193,7 +32200,7 @@ app.post("/api/ocr/process", authenticateToken, async (req, res) => {
     return sendError(res, req, 429, "Too many concurrent AI requests in progress. Please wait for your previous request to finish.");
   }
   try {
-    const { rawText, title, outputLanguage, mode } = req.body;
+    const { rawText, title, outputLanguage, mode, pages } = req.body;
     if (!rawText) {
       return sendError(res, req, 400, "rawText is required for OCR processing.");
     }
@@ -32205,7 +32212,8 @@ app.post("/api/ocr/process", authenticateToken, async (req, res) => {
       rawText,
       docTitle,
       outputLanguage || "auto",
-      mode || "smart-summary"
+      mode || "smart-summary",
+      pages
     );
     aiUsageTracker.track(userId, "ocr.process", true);
     res.json(result);

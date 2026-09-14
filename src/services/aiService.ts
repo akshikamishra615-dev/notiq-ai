@@ -732,6 +732,85 @@ function generateMindMapFromNotes(docTitle: string, notes: StickyNote[]): MindMa
 }
 
 /**
+ * Generate Page-Wise Sticky Notes for PDF documents (Page 1 through Page N)
+ */
+function generatePageWiseStickyNotes(
+  pdfPages: { pageNumber: number; text: string }[],
+  _docTitle: string,
+  mode: SummaryMode,
+  targetLanguage: 'hi' | 'en',
+  onProgress?: (progress: number, step: string) => void
+): StickyNote[] {
+  const notes: StickyNote[] = [];
+
+  for (let i = 0; i < pdfPages.length; i++) {
+    const pageObj = pdfPages[i];
+    const pageNum = pageObj.pageNumber || (i + 1);
+    const pageText = cleanGarbageOCRText(pageObj.text || '');
+
+    const pStart = 60 + Math.round(((i + 1) / pdfPages.length) * 20);
+    if (onProgress) {
+      onProgress(pStart, `Processing Page ${pageNum} of ${pdfPages.length}...`);
+    }
+
+    // Extract page-specific title/heading from pageText
+    let pageHeading = '';
+    const lines = pageText.split('\n').map(l => l.trim()).filter(Boolean);
+    for (const line of lines.slice(0, 5)) {
+      const cleanL = stripDecorativeSymbols(line);
+      if (cleanL.length > 3 && cleanL.length < 75 && !/^(page|\d+$)/i.test(cleanL)) {
+        pageHeading = cleanL;
+        break;
+      }
+    }
+
+    if (!pageHeading) {
+      const kws = extractKeywords(pageText);
+      if (kws.length > 0) {
+        pageHeading = kws.slice(0, 2).join(' & ');
+      } else {
+        pageHeading = targetLanguage === 'hi' 
+          ? `अध्याय भाग (पृष्ठ ${pageNum})` 
+          : `Chapter Section (Page ${pageNum})`;
+      }
+    }
+
+    const title = targetLanguage === 'hi'
+      ? `पेज ${pageNum}: ${pageHeading}`
+      : `Page ${pageNum}: ${pageHeading}`;
+
+    const { summary, bullets } = formatSummaryByMode(
+      pageText.length > 10 ? pageText : `Page ${pageNum} overview and study points: ${pageHeading}`,
+      mode,
+      targetLanguage
+    );
+
+    const keywords = extractKeywords(pageText);
+    const priority = detectPriority(pageHeading + ' ' + pageText);
+    const color = COLOR_PALETTE[(pageNum - 1) % COLOR_PALETTE.length];
+
+    const baseNote: StickyNote = {
+      id: `note-page-${pageNum}-${Date.now()}-${i}`,
+      title: stripDecorativeSymbols(title),
+      summary,
+      bullets,
+      keywords: keywords.length > 0 ? keywords : [pageHeading, `Page ${pageNum}`],
+      color,
+      priority,
+      topic: pageHeading.length > 28 ? pageHeading.substring(0, 25) + '...' : pageHeading,
+      chapter: String(pageNum),
+      pinned: pageNum === 1,
+      rotation: (i % 3 === 0 ? -1 : i % 3 === 1 ? 1 : 0) * (0.8 + Math.random() * 0.8),
+      createdAt: new Date().toISOString(),
+    };
+
+    notes.push(validateAndSanitizeNote(baseNote, targetLanguage));
+  }
+
+  return notes;
+}
+
+/**
  * V50.0 Master AI Output Engine: Strict Mode Separation & Language Conversion
  */
 export async function generateStickyNotesFromText(
@@ -740,7 +819,8 @@ export async function generateStickyNotesFromText(
   mode: SummaryMode = 'smart-summary',
   selectedLanguage: Language = 'auto',
   _settings?: AppSettings,
-  onProgress?: (progress: number, step: string) => void
+  onProgress?: (progress: number, step: string) => void,
+  pdfPages?: { pageNumber: number; text: string }[]
 ): Promise<AIGenerationResult> {
   if (onProgress) onProgress(10, 'OCR Extraction Complete. Restoring Word Spacing & Reconstructing Text...');
 
@@ -815,48 +895,53 @@ export async function generateStickyNotesFromText(
     storyNarrative = await translateText(storyNarrative, 'hi', 'en');
   }
 
-  if (onProgress) onProgress(60, `Splitting chapter into Page-Wise Sticky Cards (${mode})...`);
-  
-  const segments = segmentDocumentIntoTopics(rawText, mode);
+  let rawNotes: StickyNote[];
+  if (pdfPages && pdfPages.length > 0) {
+    if (onProgress) onProgress(60, `Generating Page-Wise Sticky Cards for ${pdfPages.length} PDF pages (${mode})...`);
+    rawNotes = generatePageWiseStickyNotes(pdfPages, docTitle, mode, targetLanguage, onProgress);
+  } else {
+    if (onProgress) onProgress(60, `Splitting chapter into Page-Wise Sticky Cards (${mode})...`);
+    const segments = segmentDocumentIntoTopics(rawText, mode);
+    rawNotes = segments.map((seg, idx) => {
+      const { summary, bullets } = formatSummaryByMode(seg.content, mode, targetLanguage);
+      const keywords = extractKeywords(seg.content);
+      const priority = detectPriority(seg.title + ' ' + seg.content);
+      const color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
 
-  let rawNotes: StickyNote[] = segments.map((seg, idx) => {
-    const { summary, bullets } = formatSummaryByMode(seg.content, mode, targetLanguage);
-    const keywords = extractKeywords(seg.content);
-    const priority = detectPriority(seg.title + ' ' + seg.content);
-    const color = COLOR_PALETTE[idx % COLOR_PALETTE.length];
+      const cleanTitle = stripDecorativeSymbols(seg.title);
 
-    const cleanTitle = stripDecorativeSymbols(seg.title);
+      const baseNote: StickyNote = {
+        id: `note-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
+        title: cleanTitle,
+        summary,
+        bullets,
+        keywords,
+        color,
+        priority,
+        topic: cleanTitle.length > 28 ? cleanTitle.substring(0, 25) + '...' : cleanTitle,
+        chapter: String(idx + 1),
+        pinned: idx === 0,
+        rotation: (idx % 3 === 0 ? -1 : idx % 3 === 1 ? 1 : 0) * (0.8 + Math.random() * 0.8),
+        createdAt: new Date().toISOString(),
+      };
 
-    const baseNote: StickyNote = {
-      id: `note-${Date.now()}-${idx}-${Math.random().toString(36).substr(2, 4)}`,
-      title: cleanTitle,
-      summary,
-      bullets,
-      keywords,
-      color,
-      priority,
-      topic: cleanTitle.length > 28 ? cleanTitle.substring(0, 25) + '...' : cleanTitle,
-      chapter: String(idx + 1),
-      pinned: idx === 0,
-      rotation: (idx % 3 === 0 ? -1 : idx % 3 === 1 ? 1 : 0) * (0.8 + Math.random() * 0.8),
-      createdAt: new Date().toISOString(),
-    };
-
-    return validateAndSanitizeNote(baseNote, targetLanguage);
-  });
-
-  const uniqueNotes: StickyNote[] = [];
-  const seenSummaries = new Set<string>();
-
-  for (const n of rawNotes) {
-    const normalized = n.summary.toLowerCase().replace(/[^\w\u0900-\u097F]/g, '');
-    if (!seenSummaries.has(normalized)) {
-      seenSummaries.add(normalized);
-      uniqueNotes.push(n);
-    }
+      return validateAndSanitizeNote(baseNote, targetLanguage);
+    });
   }
 
-  let notes = uniqueNotes;
+  let notes = rawNotes;
+  if (!pdfPages || pdfPages.length <= 1) {
+    const uniqueNotes: StickyNote[] = [];
+    const seenSummaries = new Set<string>();
+    for (const n of rawNotes) {
+      const normalized = n.summary.toLowerCase().replace(/[^\w\u0900-\u097F]/g, '');
+      if (!seenSummaries.has(normalized)) {
+        seenSummaries.add(normalized);
+        uniqueNotes.push(n);
+      }
+    }
+    notes = uniqueNotes;
+  }
 
   if (targetLanguage === 'hi' || (selectedLanguage === 'hi' && detectedLanguage !== 'hi')) {
     notes = await translateStickyNotes(notes, targetLanguage, detectedLanguage, onProgress);

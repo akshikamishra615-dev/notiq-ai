@@ -1262,7 +1262,7 @@ app.post('/api/ocr/process', authenticateToken, async (req: AuthenticatedRequest
   }
 
   try {
-    const { rawText, title, outputLanguage, mode } = req.body;
+    const { rawText, title, outputLanguage, mode, pages } = req.body;
 
     if (!rawText) {
       return sendError(res, req, 400, 'rawText is required for OCR processing.');
@@ -1277,7 +1277,8 @@ app.post('/api/ocr/process', authenticateToken, async (req: AuthenticatedRequest
       rawText,
       docTitle,
       outputLanguage || 'auto',
-      mode || 'smart-summary'
+      mode || 'smart-summary',
+      pages
     );
 
     aiUsageTracker.track(userId, 'ocr.process', true);
