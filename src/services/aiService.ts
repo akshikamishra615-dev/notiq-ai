@@ -54,17 +54,20 @@ function cleanText(rawText: string): string {
  */
 function stripDecorativeSymbols(str: string): string {
   if (!str) return '';
-  const cleaned = fixMergedHindiWords(reconstructHindiOCRSpelling(str))
-    .normalize('NFC')
-    .replace(/\u25CC/g, '')
-    .replace(/◌/g, '')
+  let cleaned = str.normalize('NFC');
+
+  if (!/[\u0900-\u097F]/.test(cleaned)) {
+    cleaned = fixMergedHindiWords(reconstructHindiOCRSpelling(cleaned));
+  }
+
+  return cleaned
+    .replace(/[\u25CC\u25CB\u25EF◌]/g, '')
     .replace(/\uFFFD/g, '')
     .replace(/[\*\#\`\~\_\^\<\>]+/g, '')
     .replace(/[○◉◎●🌸🎯📌⚡📖💡·▪■□◆◇✓✔★☆✦✧]/g, '')
     .replace(/^([\s•\-\*\d\.\:\)\>\·\▪\■\□\◆\◇\✓\✔\★\☆\✦\✧]|•\s*)+/g, '')
     .replace(/^(?:[-•*0-9\.\s])+/g, '')
     .trim();
-  return cleaned;
 }
 
 /**
@@ -433,6 +436,7 @@ function formatSummaryByMode(
   };
 }
 
+
 /**
  * Validation Guard: Verify that no raw OCR artifacts, broken Unicode, dotted circles (◌), or merged words leak into sticky note UI
  */
@@ -456,7 +460,7 @@ export function validateAndSanitizeNote(note: StickyNote, language: 'hi' | 'en')
     .replace(ocrArtifactPattern, '')
     .trim();
 
-  if (language === 'hi') {
+  if (language === 'hi' && !/[\u0900-\u097F]/.test(pureTopic)) {
     pureTopic = fixMergedHindiWords(reconstructHindiOCRSpelling(pureTopic));
   }
 
@@ -487,7 +491,7 @@ export function validateAndSanitizeNote(note: StickyNote, language: 'hi' | 'en')
     .replace(/(?:page|पेज)\s*\d+/gi, '')
     .trim();
 
-  if (language === 'hi') {
+  if (language === 'hi' && !/[\u0900-\u097F]/.test(cleanSummary)) {
     cleanSummary = fixMergedHindiWords(reconstructHindiOCRSpelling(cleanSummary));
   }
 
@@ -512,7 +516,7 @@ export function validateAndSanitizeNote(note: StickyNote, language: 'hi' | 'en')
         .replace(/(?:इस पृष्ठ का मुख्य बिंदु|पहला महत्वपूर्ण बिंदु|दूसरा महत्वपूर्ण बिंदु|तीसरा महत्वपूर्ण बिंदु|चौथा महत्वपूर्ण बिंदु|पाँचवाँ महत्वपूर्ण बिंदु)[\s\d\:\-]*/gi, '')
         .trim();
 
-      if (language === 'hi') {
+      if (language === 'hi' && !/[\u0900-\u097F]/.test(cleanedB)) {
         cleanedB = fixMergedHindiWords(reconstructHindiOCRSpelling(cleanedB));
       }
       return toEnglishDigits(cleanedB);
@@ -573,7 +577,7 @@ export function validateAndSanitizeNote(note: StickyNote, language: 'hi' | 'en')
         .replace(ocrArtifactPattern, '')
         .trim();
 
-      if (language === 'hi') {
+      if (language === 'hi' && !/[\u0900-\u097F]/.test(cleanedK)) {
         cleanedK = fixMergedHindiWords(reconstructHindiOCRSpelling(cleanedK));
       }
       return toEnglishDigits(cleanedK);

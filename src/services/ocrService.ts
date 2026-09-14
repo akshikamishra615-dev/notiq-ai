@@ -147,9 +147,10 @@ export function fixMergedHindiWords(text: string): string {
 
   let splitText = repairDottedCirclesAndMatras(text);
 
-  // Specific merged OCR phrases repair
+  // Specific merged OCR phrases repair (explicit phrases only)
   const mergedPhrases: [RegExp, string][] = [
     [/कार्यप्रणालीएवं/g, "कार्यप्रणाली एवं"],
+    [/कार्यप्रणालीएवंसंरचना/g, "कार्यप्रणाली एवं संरचना"],
     [/लोगोंने/g, "लोगों ने"],
     [/मंदिरकाविस्तार/g, "मंदिर का विस्तार"],
     [/गाँवकीआबादी/g, "गाँव की आबादी"],
@@ -180,16 +181,7 @@ export function fixMergedHindiWords(text: string): string {
     splitText = splitText.replace(pattern, replacement);
   }
 
-  // Regex rules to insert spaces before common Devanagari conjunctions, postpositions, and aux verbs when concatenated
-  splitText = splitText
-    .replace(/([\u0900-\u097F]{2,})(एवं|और|तथा|परंतु|लेकिन|क्योंकि)/g, '$1 $2')
-    .replace(/([\u0900-\u097F]{2,})(ने|में|पर|से|को|का|की|के|लिए|तक|द्वारा)(?=[\s\.\,।\?\!]|$)/g, '$1 $2')
-    .replace(/([\u0900-\u097F]{3,})(है|हैं|था|थे|थी|थीं|गया|गए|गई|दिया)(?=[\s\.\,।\?\!]|$)/g, '$1 $2')
-    .replace(/\s*([।\,\?\!])\s*/g, '$1 ')
-    .replace(/ {2,}/g, ' ')
-    .trim();
-
-  return splitText;
+  return splitText.replace(/\s*([।\,\?\!])\s*/g, '$1 ').replace(/ {2,}/g, ' ').trim();
 }
 
 /**
@@ -210,32 +202,6 @@ export function reconstructHindiOCRSpelling(text: string): string {
     [/कि[\u25CC\u25CB\u25EF◌]पता/g, "पिता"],
     [/ब[\u25CC\u25CB\u25EF◌]च्चे/g, "बच्चे"],
     [/ग[\u25CC\u25CB\u25EF◌]तिविधि/g, "गतिविधि"],
-
-    // Romanized / Phonetic / Hinglish OCR Auto-Corrections
-    [/\bkipata\b/gi, "पिता"],
-    [/\byojitna\b/gi, "जितना"],
-    [/\bkoijitna\b/gi, "को जितना"],
-    [/\bbche\b/gi, "बच्चे"],
-    [/\bbache\b/gi, "बच्चे"],
-    [/\bpados\b/gi, "पड़ोस"],
-    [/\bvandho\b/gi, "कंधों"],
-    [/\bkandho\b/gi, "कंधों"],
-    [/\bghumaya\b/gi, "घुमाया"],
-    [/\bpyar\b/gi, "प्यार"],
-    [/\byar\b/gi, "प्यार"],
-    [/\bmandir\b/gi, "मंदिर"],
-    [/\babadi\b/gi, "आबादी"],
-    [/\bvistar\b/gi, "विस्तार"],
-    [/\blogo\b/gi, "लोगों"],
-    [/\bchanda\s+karve\b/gi, "चंदा करके"],
-    [/puja&path/gi, "पूजा-पाठ"],
-    [/puja\s+path/gi, "पूजा-पाठ"],
-    [/\bladki\b/gi, "लड़की"],
-    [/\bgaon\b/gi, "गांव"],
-    [/\bhirhar\b/gi, "हरिहर"],
-    [/\bHirhar\b/gi, "हरिहर"],
-    [/\bkaka\b/gi, "काका"],
-    [/\bKaka\b/gi, "काका"],
 
     // Devanagari OCR Misreadings
     [/\bलोों\b/g, "लोगों"],
@@ -290,8 +256,6 @@ export function reconstructHindiOCRSpelling(text: string): string {
     [/\bकिताबो\b/g, "किताबों"],
     [/\bबच्चो\b/g, "बच्चों"],
     [/\bगाँव\b/g, "गांव"],
-    [/\b\?ाुमाया\b/g, "घुमाया"],
-    [/\b\?ाुमाया करते\b/g, "घुमाया करते"],
   ];
 
   for (const [pattern, replacement] of ocrSpellingFixes) {
@@ -307,12 +271,18 @@ export function reconstructHindiOCRSpelling(text: string): string {
 export function convertKrutiDevToUnicode(text: string): string {
   if (!text) return '';
 
-  // English safety guard: Never run Kruti Dev replacement on standard English sentences
+  // Guard 1: If text ALREADY contains Devanagari Unicode, DO NOT run Kruti Dev replacement!
+  if (/[\u0900-\u097F]/.test(text)) {
+    return text;
+  }
+
+  // Guard 2: English safety guard - Never run Kruti Dev replacement on standard English sentences
   if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
     return fixFontShiftArtifacts(text);
   }
 
-  const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk|fdlh|jkT;|ns'k|'kgj|xkWv|Hkh|ugha|deh|dkdk|le;|fd;k|djuk|ls|rd|dks|rkfd|ij|gS|gSa|Fkk|Fks|Fkh)\b|vk[a-z]|fl|f[a-zA-Z]|kQ|iQ|'k|’k|Hk|\.k|=k/;
+  // Strict Kruti Dev signature matching actual Kruti Dev legacy font words (NOT single letters)
+  const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|fl¼kUr|EkgÙoiw|ijh{kk|f'k{kk|vkosnu|'kkld|jkT;|ns'k|'kgj|xkWv|deh|dkdk)\b/;
   
   if (!krutiDevSignature.test(text)) {
     return fixFontShiftArtifacts(text);
@@ -392,20 +362,28 @@ export function convertKrutiDevToUnicode(text: string): string {
 
 /**
  * Clean & normalize Hindi Devanagari OCR text:
- * 1. Convert Kruti Dev / DevLys legacy font shift codes first
- * 2. Unicode NFC Normalization & Dotted Circle Repair
- * 3. Repair common OCR spelling misreadings & split merged Hindi words
- * 4. Eliminate dotted circle artifacts (\u25CC / ◌) and replacement chars (\uFFFD)
- * 5. Fix misplaced / orphaned matras
+ * 1. If text is ALREADY valid Devanagari Unicode, preserve it directly!
+ * 2. Convert Kruti Dev / DevLys legacy font shift codes ONLY when needed
+ * 3. Repair dotted circle artifacts (\u25CC / ◌) and replacement chars (\uFFFD)
+ * 4. Fix misplaced / orphaned matras
  */
 export function normalizeHindiOCRText(text: string): string {
   if (!text) return '';
 
-  // 1. Convert Kruti Dev / DevLys legacy font encodings first (creates Devanagari Unicode characters)
+  // SAFEGUARD: If text ALREADY contains valid Devanagari Unicode characters, DO NOT run Kruti Dev replacement or word chopping!
+  if (/[\u0900-\u097F]/.test(text)) {
+    return repairDottedCirclesAndMatras(text.normalize('NFC'))
+      .replace(/[\u25CC\u25CB\u25EF◌]/g, '')
+      .replace(/\uFFFD/g, '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // 1. Convert Kruti Dev / DevLys legacy font encodings first (ONLY for non-Unicode text)
   let normalized = convertKrutiDevToUnicode(text);
 
   const hasDevanagari = /[\u0900-\u097F]/.test(normalized);
-  // Pure English text guard: preserve clean Latin letters without Hindi matra corruption
   if (!hasDevanagari) {
     return fixFontShiftArtifacts(normalized.normalize('NFC').replace(/\s+/g, ' ').trim());
   }
@@ -413,39 +391,21 @@ export function normalizeHindiOCRText(text: string): string {
   // 2. Unicode NFC Normalization & Dotted Circle Repair
   normalized = repairDottedCirclesAndMatras(normalized.normalize('NFC'));
 
-  // 2. Convert Kruti Dev / DevLys legacy font encodings
-  normalized = convertKrutiDevToUnicode(normalized);
-
-  // 3. Repair common Hindi OCR spelling & split merged words
-  normalized = reconstructHindiOCRSpelling(normalized);
-
-  // 4. Remove orphan dotted circles (\u25CC / ◌), replacement characters (\uFFFD), and zero-width control chars
+  // 3. Remove orphan dotted circles (\u25CC / ◌), replacement characters (\uFFFD), and zero-width control chars
   normalized = normalized
     .replace(/[\u25CC\u25CB\u25EF◌]/g, '')
     .replace(/\uFFFD/g, '')
     .replace(/[\u200B-\u200D\uFEFF]/g, '');
 
-  // 5. Attach orphaned Devanagari vowel signs & matras to preceding characters
+  // 4. Attach orphaned Devanagari vowel signs & matras to preceding characters
   normalized = normalized.replace(/\s+([\u093E-\u094C\u0901\u0902\u0903\u094D])/g, '$1');
 
-  // 6. Clean OCR garbage code tokens
-  let cleaned = normalized
-    .replace(/[\*\#\`\~\_\^\<\>]+/g, '')
-    .replace(/\b(UXV|UXK|UXJ|QWX|PLM|XZY|ZXC|VBN|FGH|JKL|WER|TYU|IOP|ASD|GHJ|KLZ|XCV|BNM)\b/gi, ' ')
-    .replace(/[,\[\]\{\}\\\/\|\+=\x00-\x08\x0B\x0C\x0E-\x1F]+/g, ' ');
-
-  cleaned = cleaned.replace(/\b(?!(NCF|PDF|NCERT|SDLC|AI|IT|UN|WHO|BCA|CBSE)\b)[A-Za-z]{1,3}\b/g, '');
-  cleaned = cleaned.replace(/[A-Za-z]{1,4}(?=[\u0900-\u097F])/g, '');
-
-  // Final NFC & Word Segmentation Pass
-  return fixMergedHindiWords(
-    fixFontShiftArtifacts(
-      cleaned
-        .normalize('NFC')
-        .replace(/\s+/g, ' ')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim()
-    )
+  return fixFontShiftArtifacts(
+    normalized
+      .normalize('NFC')
+      .replace(/\s+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
   );
 }
 

@@ -30683,6 +30683,9 @@ var HindiReconstructionService = class {
    */
   static reconstruct(rawText) {
     if (!rawText) return "";
+    if (/[\u0900-\u097F]/.test(rawText)) {
+      return this.cleanOCRCodes(this.repairMatrasAndDottedCircles(rawText.normalize("NFC"))).trim();
+    }
     let text = this.convertKrutiDevToUnicode(rawText);
     text = text.normalize("NFC");
     text = this.cleanOCRCodes(text);
@@ -30751,11 +30754,10 @@ var HindiReconstructionService = class {
     for (const [pattern, replacement] of specificMergedPhrases) {
       split = split.replace(pattern, replacement);
     }
-    split = split.replace(/([\u0900-\u097F]{2,})(एवं|और|तथा|परंतु|लेकिन|क्योंकि)/g, "$1 $2").replace(/([\u0900-\u097F]{2,})(ने|में|पर|से|को|का|की|के|लिए|तक|द्वारा)(?=[\s\.\,।\?\!]|$)/g, "$1 $2").replace(/([\u0900-\u097F]{3,})(है|हैं|था|थे|थी|थीं|गया|गए|गई|दिया)(?=[\s\.\,।\?\!]|$)/g, "$1 $2").replace(/\s*([।\,\?\!])\s*/g, "$1 ").replace(/ {2,}/g, " ");
-    return split;
+    return split.replace(/\s*([।\,\?\!])\s*/g, "$1 ").replace(/ {2,}/g, " ");
   }
   /**
-   * Correct Hindi Spelling & Grammar Misreadings (e.g. किपता -> पिता, योिजतना -> जितना, मंिदर -> मंदिर)
+   * Correct Hindi Spelling & Grammar Misreadings
    */
   static repairGrammarAndSpelling(text) {
     let repaired = text;
@@ -30802,10 +30804,13 @@ var HindiReconstructionService = class {
    */
   static convertKrutiDevToUnicode(text) {
     if (!text) return "";
+    if (/[\u0900-\u097F]/.test(text)) {
+      return text;
+    }
     if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
       return text;
     }
-    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk|fdlh|jkT;|ns'k|'kgj|xkWv|Hkh|ugha|deh|dkdk|le;|fd;k|djuk|ls|rd|dks|rkfd|ij|gS|gSa|Fkk|Fks|Fkh)\b|vk[a-z]|fl|f[a-zA-Z]|kQ|iQ|'k|’k|Hk|\.k|=k/;
+    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|fl¼kUr|EkgÙoiw|ijh{kk|f'k{kk|vkosnu|'kkld|jkT;|ns'k|'kgj|xkWv|deh|dkdk)\b/;
     if (!krutiDevSignature.test(text)) {
       return text;
     }
