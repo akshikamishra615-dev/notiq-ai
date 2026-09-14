@@ -1,5 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { extractTextFromImage } from './ocrService';
+import { normalizePageText } from './universalDocumentPipeline';
 import type { Language } from '../types';
 
 // Initialize PDF.js worker
@@ -44,12 +45,27 @@ export async function extractTextFromPDF(
       const page = await pdf.getPage(i);
       const textContent = await page.getTextContent();
       
-      const pageText = textContent.items
+      const fontNames: string[] = [];
+      if (textContent.styles) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        Object.values(textContent.styles).forEach((s: any) => {
+          if (s && s.fontFamily) fontNames.push(s.fontFamily);
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      textContent.items.forEach((item: any) => {
+        if (item && item.fontName) fontNames.push(item.fontName);
+      });
+
+      const rawPageText = textContent.items
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((item: any) => item.str || '')
         .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
+
+      const pageMeta = await normalizePageText(i, rawPageText, fontNames);
+      const pageText = pageMeta.normalizedText;
 
       pages.push({ pageNumber: i, text: pageText });
       fullText += `\n--- Page ${i} ---\n` + pageText + '\n\n';
