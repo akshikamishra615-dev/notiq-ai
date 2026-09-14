@@ -13,8 +13,11 @@ export class HindiReconstructionService {
   public static reconstruct(rawText: string): string {
     if (!rawText) return '';
 
+    // Stage 0: Kruti Dev / DevLys Legacy Font Conversion
+    let text = this.convertKrutiDevToUnicode(rawText);
+
     // Stage 1: Unicode Normalization (NFC)
-    let text = rawText.normalize('NFC');
+    text = text.normalize('NFC');
 
     // Stage 2: Remove OCR Garbage Codes & UTF Artifacts
     text = this.cleanOCRCodes(text);
@@ -164,6 +167,95 @@ export class HindiReconstructionService {
     }
 
     return repaired;
+  }
+
+  /**
+   * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
+   */
+  public static convertKrutiDevToUnicode(text: string): string {
+    if (!text) return '';
+
+    // Safety guard: Never run Kruti Dev replacement on standard English sentences
+    if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
+      return text;
+    }
+
+    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk|fdlh|jkT;|ns'k|'kgj|xkWv|Hkh|ugha|deh|dkdk|le;|fd;k|djuk|ls|rd|dks|rkfd|ij|gS|gSa|Fkk|Fks|Fkh)\b|vk[a-z]|fl|f[a-zA-Z]|kQ|iQ|'k|’k|Hk|\.k|=k/;
+    
+    if (!krutiDevSignature.test(text)) {
+      return text;
+    }
+
+    let modifiedText = text;
+
+    const exactReplacements: [RegExp, string][] = [
+      [/vkfl/g, "आसिर"],
+      [/okbZ/g, "वाई"],
+      [/kQkby/g, "फ़ाइल"],
+      [/iQhrk/g, "फ़ीता"],
+      [/lsDku/g, "सेक्शन"],
+      [/HkkbZ/g, "भाई"],
+      [/vkf\/kdkj/g, "अधिकार"],
+      [/O;atu/g, "व्यंजन"],
+      [/vkUu/g, "अन्न"],
+      [/fl¼kUr/g, "सिद्धान्त"],
+      [/EkgÙoiw\.kZ/g, "महत्वपूर्ण"],
+      [/ijh{kk/g, "परीक्षा"],
+      [/f'k{kk/g, "शिक्षा"],
+      [/vkosnu/g, "आवेदन"],
+      [/'kkld/g, "शासक"],
+      [/\bHkh\b/g, "भी"],
+      [/\bugha\b/g, "नहीं"],
+      [/\bdeh\b/g, "कमी"],
+      [/\bdkdk\b/g, "काका"],
+      [/\bjkT;\b/g, "राज्य"],
+      [/\bns'k\b/g, "देश"],
+      [/\b'kgj\b/g, "शहर"],
+      [/\bxkWv\b/g, "गांव"],
+    ];
+
+    for (const [pattern, replacement] of exactReplacements) {
+      modifiedText = modifiedText.replace(pattern, replacement);
+    }
+
+    const array_one = [
+      "kS", "ks", "k", "s", "S", "h", "q", "w", "`", "a", ":", "¡", "A",
+      "vks", "vkS", "vk", "v", "bZ", "b", "m", "Å", "_,",
+      "d", "X", "p", "N", "t", "T", "V", "B", "M", "R", ".k",
+      "r", "F", "n", "è", "u", "i", "Qq", "c", "Hk", "e", ";", "j", "y", "o",
+      "'k", "’k", "l", "g", "{k", "=k", "K"
+    ];
+
+    const array_two = [
+      "ौ", "ो", "ा", "े", "ै", "ी", "ु", "ू", "ृ", "ं", "ः", "ँ", "।",
+      "ओ", "औ", "आ", "अ", "ई", "इ", "उ", "ऊ", "ऋ",
+      "क", "घ", "च", "छ", "ज", "झ", "ट", "ठ", "ड", "ढ", "ण",
+      "त", "थ", "द", "ध", "न", "प", "फ", "ब", "भ", "म", "य", "र", "ल", "व",
+      "श", "ष", "स", "ह", "क्ष", "त्र", "ज्ञ"
+    ];
+
+    let position_of_i = modifiedText.indexOf('f');
+    while (position_of_i !== -1) {
+      const character_next_to_i = modifiedText.charAt(position_of_i + 1);
+      const character_after_next = modifiedText.charAt(position_of_i + 2);
+
+      if (character_after_next === 'k' || character_after_next === 'h') {
+        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + character_after_next + 'f' + modifiedText.substring(position_of_i + 3);
+      } else {
+        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + 'f' + modifiedText.substring(position_of_i + 2);
+      }
+      position_of_i = modifiedText.indexOf('f', position_of_i + 1);
+    }
+
+    for (let input_symbol_idx = 0; input_symbol_idx < array_one.length; input_symbol_idx++) {
+      const idx = array_one[input_symbol_idx];
+      const unicode_char = array_two[input_symbol_idx];
+      modifiedText = modifiedText.split(idx).join(unicode_char);
+    }
+
+    modifiedText = modifiedText.split('f').join('ि');
+
+    return modifiedText;
   }
 
   /**

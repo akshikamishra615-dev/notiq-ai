@@ -500,17 +500,17 @@ export const StickyBoardView: React.FC = () => {
       )}
 
       {/* Filter & Search Toolbar with Reading Mode Selector */}
-      <div className="glass-panel p-4 rounded-2xl border border-white/10 light:border-slate-200 shadow-md flex flex-wrap items-center justify-between gap-3">
+      <div className="glass-panel p-3 sm:p-4 rounded-2xl border border-white/10 light:border-slate-200 shadow-md flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 max-w-full overflow-hidden">
         
         {/* Reading Mode Segmented Control (Quick / Detailed / Revision) */}
-        <div className="flex items-center p-1 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200">
+        <div className="flex items-center p-1 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 max-w-full overflow-x-auto scrollbar-none shrink-0 w-full sm:w-auto justify-between sm:justify-start">
           <button
             onClick={() => handleReadingModeChange('quick')}
             title="Quick View (Compact 3-5 line short summary preview + Show More)"
-            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
               readingMode === 'quick'
                 ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white shadow-xs'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
             }`}
           >
             ⚡ Quick View
@@ -518,10 +518,10 @@ export const StickyBoardView: React.FC = () => {
           <button
             onClick={() => handleReadingModeChange('detailed')}
             title="Detailed View (Auto expand all sticky notes)"
-            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
               readingMode === 'detailed'
                 ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white shadow-xs'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
             }`}
           >
             📖 Detailed View
@@ -529,10 +529,10 @@ export const StickyBoardView: React.FC = () => {
           <button
             onClick={() => handleReadingModeChange('revision')}
             title="Revision View (Show key points & formulas only)"
-            className={`px-3 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+            className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer ${
               readingMode === 'revision'
                 ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white shadow-xs'
-                : 'text-slate-400 hover:text-white'
+                : 'text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
             }`}
           >
             🎯 Revision View
@@ -540,7 +540,7 @@ export const StickyBoardView: React.FC = () => {
         </div>
 
         {/* Search Input */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1 min-w-[180px] sm:min-w-[200px] max-w-full w-full sm:w-auto">
           <Search className="w-4 h-4 text-slate-400 light:text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
@@ -553,12 +553,12 @@ export const StickyBoardView: React.FC = () => {
 
         {/* Topic Filter */}
         {availableTopics.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 light:text-slate-600 font-medium">Topic:</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 max-w-full shrink-0">
+            <span className="text-xs text-slate-400 light:text-slate-600 font-medium shrink-0">Topic:</span>
             <select
               value={filterTopic}
               onChange={(e) => setFilterTopic(e.target.value)}
-              className="px-3 py-2 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 text-xs text-white light:text-slate-900 focus:outline-none focus:border-brand-pink"
+              className="px-2.5 sm:px-3 py-2 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 text-xs text-white light:text-slate-900 focus:outline-none focus:border-brand-pink max-w-[160px] xs:max-w-[200px] sm:max-w-xs truncate"
             >
               <option value="all" className="bg-[#141028] light:bg-white text-white light:text-slate-900">All Topics ({notes.length})</option>
               {availableTopics.map((t) => (
@@ -571,12 +571,12 @@ export const StickyBoardView: React.FC = () => {
         )}
 
         {/* Priority Filter */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 max-w-full overflow-x-auto scrollbar-none shrink-0">
           {(['all', 'high', 'medium', 'low'] as (Priority | 'all')[]).map((p) => (
             <button
               key={p}
               onClick={() => setFilterPriority(p)}
-              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold capitalize transition-all cursor-pointer ${
+              className={`px-2.5 py-1.5 rounded-lg text-[11px] font-bold capitalize whitespace-nowrap transition-all cursor-pointer ${
                 filterPriority === p
                   ? 'bg-gradient-to-r from-brand-purple to-brand-pink text-white shadow-xs'
                   : 'bg-white/5 light:bg-slate-100 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
@@ -587,33 +587,34 @@ export const StickyBoardView: React.FC = () => {
           ))}
         </div>
 
-        {/* Color Filter Dots */}
-        <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200">
-          <Palette className="w-3.5 h-3.5 text-brand-pink light:text-purple-600 mr-0.5" />
-          {COLOR_DOTS.map((dot) => (
-            <button
-              key={dot.id}
-              onClick={() => setFilterColor(dot.id)}
-              title={dot.name}
-              className={`w-4 h-4 rounded-full ${dot.bg} transition-all cursor-pointer ${
-                filterColor === dot.id ? 'ring-2 ring-brand-purple scale-125' : 'opacity-70 hover:opacity-100'
-              }`}
-            />
-          ))}
-        </div>
+        {/* Color Filter Dots & Pinned Toggle Group */}
+        <div className="flex items-center gap-2 max-w-full flex-wrap shrink-0">
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-white/5 light:bg-slate-100 border border-white/10 light:border-slate-200 shrink-0">
+            <Palette className="w-3.5 h-3.5 text-brand-pink light:text-purple-600 mr-0.5" />
+            {COLOR_DOTS.map((dot) => (
+              <button
+                key={dot.id}
+                onClick={() => setFilterColor(dot.id)}
+                title={dot.name}
+                className={`w-4 h-4 rounded-full ${dot.bg} transition-all cursor-pointer ${
+                  filterColor === dot.id ? 'ring-2 ring-brand-purple scale-125' : 'opacity-70 hover:opacity-100'
+                }`}
+              />
+            ))}
+          </div>
 
-        {/* Pinned Toggle */}
-        <button
-          onClick={() => setFilterPinnedOnly(!filterPinnedOnly)}
-          className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
-            filterPinnedOnly
-              ? 'bg-rose-500/20 text-rose-300 light:text-rose-700 border border-rose-500/40 light:border-rose-300'
-              : 'bg-white/5 light:bg-slate-100 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
-          }`}
-        >
-          <Pin className={`w-3 h-3 ${filterPinnedOnly ? 'fill-rose-400' : ''}`} />
-          <span>Pinned Only</span>
-        </button>
+          <button
+            onClick={() => setFilterPinnedOnly(!filterPinnedOnly)}
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 ${
+              filterPinnedOnly
+                ? 'bg-rose-500/20 text-rose-300 light:text-rose-700 border border-rose-500/40 light:border-rose-300'
+                : 'bg-white/5 light:bg-slate-100 text-slate-400 light:text-slate-600 hover:text-white light:hover:text-slate-900'
+            }`}
+          >
+            <Pin className={`w-3 h-3 ${filterPinnedOnly ? 'fill-rose-400' : ''}`} />
+            <span>Pinned Only</span>
+          </button>
+        </div>
       </div>
 
       {/* Sticky Board Canvas Container */}

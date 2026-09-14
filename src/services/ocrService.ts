@@ -60,9 +60,34 @@ export function repairDottedCirclesAndMatras(text: string): string {
   return cleaned.normalize('NFC');
 }
 
+const COMMON_ENGLISH_WORDS_SET = new Set([
+  'THE', 'BE', 'TO', 'OF', 'AND', 'A', 'IN', 'THAT', 'HAVE', 'IT', 'FOR', 'NOT',
+  'ON', 'WITH', 'HE', 'AS', 'YOU', 'DO', 'AT', 'THIS', 'BUT', 'HIS', 'BY', 'FROM',
+  'THEY', 'WE', 'SAY', 'HER', 'SHE', 'OR', 'AN', 'WILL', 'MY', 'ONE', 'ALL', 'WOULD',
+  'THERE', 'THEIR', 'WHAT', 'SO', 'UP', 'OUT', 'IF', 'ABOUT', 'WHO', 'GET', 'WHICH',
+  'GO', 'ME', 'WHEN', 'MAKE', 'CAN', 'LIKE', 'TIME', 'NO', 'JUST', 'HIM', 'KNOW',
+  'TAKE', 'PEOPLE', 'INTO', 'YEAR', 'YOUR', 'GOOD', 'SOME', 'COULD', 'THEM', 'SEE',
+  'OTHER', 'THAN', 'THEN', 'NOW', 'LOOK', 'ONLY', 'COME', 'ITS', 'OVER', 'THINK',
+  'ALSO', 'BACK', 'AFTER', 'USE', 'TWO', 'HOW', 'OUR', 'WORK', 'FIRST', 'WELL',
+  'WAY', 'EVEN', 'NEW', 'WANT', 'BECAUSE', 'ANY', 'THESE', 'GIVE', 'DAY', 'MOST',
+  'US', 'WISTFUL', 'WISTFULL', 'LONGINGLY', 'KINDLE', 'SET', 'ALIGHT', 'TEXTBOOK',
+  'DEVELOPMENT', 'COMMITTEE', 'CHAPTER', 'SCIENCE', 'PHYSICS', 'MATHEMATICS',
+  'BIOLOGY', 'CHEMISTRY', 'LESSON', 'SUMMARY', 'NOTES', 'SYSTEM', 'PROCESS',
+  'CONCEPT', 'THEORY', 'EXAMPLE', 'SECTION', 'METHOD', 'FUNCTION', 'RESULT',
+  'PRIMARY', 'SECONDARY', 'UNIVERSITY', 'COLLEGE', 'EDUCATION', 'STUDENT'
+]);
+
+function decodeCaesarWord(word: string, shift: number): string {
+  return word.replace(/[a-zA-Z]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    const base = code >= 65 && code <= 90 ? 65 : 97;
+    return String.fromCharCode(((code - base - shift + 26) % 26) + base);
+  });
+}
+
 /**
- * Detect & auto-correct ROT-6 / font encoding shift artifacts from PDF OCR headers
- * (e.g. "KZHUUQ K KRUVSKTZ )USSOZZKK" -> "TEXTBOOK DEVELOPMENT COMMITTEE")
+ * Detect & auto-correct ROT / font encoding shift artifacts from PDF OCR text
+ * (e.g. "ZLVWIXOO ORQJLQJO NLQGOH VHW DOLJKW" -> "WISTFULL LONGINGLY KINDLE SET ALIGHT")
  */
 export function fixFontShiftArtifacts(text: string): string {
   if (!text) return '';
@@ -79,6 +104,36 @@ export function fixFontShiftArtifacts(text: string): string {
 
   for (const [pattern, replacement] of fontShiftReplacements) {
     cleaned = cleaned.replace(pattern, replacement);
+  }
+
+  // Dynamic Caesar Shift Detection for PDF font encoding artifacts
+  const alphaWords = cleaned.match(/[a-zA-Z]{3,}/g);
+  if (alphaWords && alphaWords.length > 0) {
+    let score0 = 0;
+    for (const w of alphaWords) {
+      if (COMMON_ENGLISH_WORDS_SET.has(w.toUpperCase())) score0++;
+    }
+
+    let bestShift = 0;
+    let maxScore = score0;
+
+    for (let shift = 1; shift < 26; shift++) {
+      let score = 0;
+      for (const w of alphaWords) {
+        const decoded = decodeCaesarWord(w, shift).toUpperCase();
+        if (COMMON_ENGLISH_WORDS_SET.has(decoded)) {
+          score++;
+        }
+      }
+      if (score > maxScore) {
+        maxScore = score;
+        bestShift = shift;
+      }
+    }
+
+    if (bestShift > 0 && maxScore > score0 + 1) {
+      cleaned = cleaned.replace(/[a-zA-Z]+/g, (w) => decodeCaesarWord(w, bestShift));
+    }
   }
 
   return cleaned;
@@ -253,11 +308,11 @@ export function convertKrutiDevToUnicode(text: string): string {
   if (!text) return '';
 
   // English safety guard: Never run Kruti Dev replacement on standard English sentences
-  if (/\b(the|and|is|in|to|of|for|with|that|this|from|are|was|chapter|section|notes|study|overview|page)\b/i.test(text)) {
+  if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
     return fixFontShiftArtifacts(text);
   }
 
-  const krutiDevSignature = /\b(HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk)\b/;
+  const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk|fdlh|jkT;|ns'k|'kgj|xkWv|Hkh|ugha|deh|dkdk|le;|fd;k|djuk|ls|rd|dks|rkfd|ij|gS|gSa|Fkk|Fks|Fkh)\b|vk[a-z]|fl|f[a-zA-Z]|kQ|iQ|'k|’k|Hk|\.k|=k/;
   
   if (!krutiDevSignature.test(text)) {
     return fixFontShiftArtifacts(text);
@@ -266,6 +321,11 @@ export function convertKrutiDevToUnicode(text: string): string {
   let modifiedText = text;
 
   const exactReplacements: [RegExp, string][] = [
+    [/vkfl/g, "आसिर"],
+    [/okbZ/g, "वाई"],
+    [/kQkby/g, "फ़ाइल"],
+    [/iQhrk/g, "फ़ीता"],
+    [/lsDku/g, "सेक्शन"],
     [/HkkbZ/g, "भाई"],
     [/vkf\/kdkj/g, "अधिकार"],
     [/O;atu/g, "व्यंजन"],
@@ -332,8 +392,8 @@ export function convertKrutiDevToUnicode(text: string): string {
 
 /**
  * Clean & normalize Hindi Devanagari OCR text:
- * 1. Unicode NFC Normalization (composes base letters and matras)
- * 2. Convert Kruti Dev / DevLys font shift codes
+ * 1. Convert Kruti Dev / DevLys legacy font shift codes first
+ * 2. Unicode NFC Normalization & Dotted Circle Repair
  * 3. Repair common OCR spelling misreadings & split merged Hindi words
  * 4. Eliminate dotted circle artifacts (\u25CC / ◌) and replacement chars (\uFFFD)
  * 5. Fix misplaced / orphaned matras
@@ -341,14 +401,17 @@ export function convertKrutiDevToUnicode(text: string): string {
 export function normalizeHindiOCRText(text: string): string {
   if (!text) return '';
 
-  const hasDevanagari = /[\u0900-\u097F]/.test(text);
+  // 1. Convert Kruti Dev / DevLys legacy font encodings first (creates Devanagari Unicode characters)
+  let normalized = convertKrutiDevToUnicode(text);
+
+  const hasDevanagari = /[\u0900-\u097F]/.test(normalized);
   // Pure English text guard: preserve clean Latin letters without Hindi matra corruption
   if (!hasDevanagari) {
-    return fixFontShiftArtifacts(text.normalize('NFC').replace(/\s+/g, ' ').trim());
+    return fixFontShiftArtifacts(normalized.normalize('NFC').replace(/\s+/g, ' ').trim());
   }
 
-  // 1. Unicode NFC Normalization & Dotted Circle Repair
-  let normalized = repairDottedCirclesAndMatras(text.normalize('NFC'));
+  // 2. Unicode NFC Normalization & Dotted Circle Repair
+  normalized = repairDottedCirclesAndMatras(normalized.normalize('NFC'));
 
   // 2. Convert Kruti Dev / DevLys legacy font encodings
   normalized = convertKrutiDevToUnicode(normalized);

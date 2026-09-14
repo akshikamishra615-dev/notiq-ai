@@ -30683,7 +30683,8 @@ var HindiReconstructionService = class {
    */
   static reconstruct(rawText) {
     if (!rawText) return "";
-    let text = rawText.normalize("NFC");
+    let text = this.convertKrutiDevToUnicode(rawText);
+    text = text.normalize("NFC");
     text = this.cleanOCRCodes(text);
     text = this.repairMatrasAndDottedCircles(text);
     text = this.splitMergedHindiWords(text);
@@ -30795,6 +30796,178 @@ var HindiReconstructionService = class {
       repaired = repaired.replace(pattern, replacement);
     }
     return repaired;
+  }
+  /**
+   * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
+   */
+  static convertKrutiDevToUnicode(text) {
+    if (!text) return "";
+    if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
+      return text;
+    }
+    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|ijh{kk|EkgÙoiw\.kZ|fl¼kUr|'kkld|vkosnu|f'k{kk|fdlh|jkT;|ns'k|'kgj|xkWv|Hkh|ugha|deh|dkdk|le;|fd;k|djuk|ls|rd|dks|rkfd|ij|gS|gSa|Fkk|Fks|Fkh)\b|vk[a-z]|fl|f[a-zA-Z]|kQ|iQ|'k|’k|Hk|\.k|=k/;
+    if (!krutiDevSignature.test(text)) {
+      return text;
+    }
+    let modifiedText = text;
+    const exactReplacements = [
+      [/vkfl/g, "\u0906\u0938\u093F\u0930"],
+      [/okbZ/g, "\u0935\u093E\u0908"],
+      [/kQkby/g, "\u092B\u093C\u093E\u0907\u0932"],
+      [/iQhrk/g, "\u092B\u093C\u0940\u0924\u093E"],
+      [/lsDku/g, "\u0938\u0947\u0915\u094D\u0936\u0928"],
+      [/HkkbZ/g, "\u092D\u093E\u0908"],
+      [/vkf\/kdkj/g, "\u0905\u0927\u093F\u0915\u093E\u0930"],
+      [/O;atu/g, "\u0935\u094D\u092F\u0902\u091C\u0928"],
+      [/vkUu/g, "\u0905\u0928\u094D\u0928"],
+      [/fl¼kUr/g, "\u0938\u093F\u0926\u094D\u0927\u093E\u0928\u094D\u0924"],
+      [/EkgÙoiw\.kZ/g, "\u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923"],
+      [/ijh{kk/g, "\u092A\u0930\u0940\u0915\u094D\u0937\u093E"],
+      [/f'k{kk/g, "\u0936\u093F\u0915\u094D\u0937\u093E"],
+      [/vkosnu/g, "\u0906\u0935\u0947\u0926\u0928"],
+      [/'kkld/g, "\u0936\u093E\u0938\u0915"],
+      [/\bHkh\b/g, "\u092D\u0940"],
+      [/\bugha\b/g, "\u0928\u0939\u0940\u0902"],
+      [/\bdeh\b/g, "\u0915\u092E\u0940"],
+      [/\bdkdk\b/g, "\u0915\u093E\u0915\u093E"],
+      [/\bjkT;\b/g, "\u0930\u093E\u091C\u094D\u092F"],
+      [/\bns'k\b/g, "\u0926\u0947\u0936"],
+      [/\b'kgj\b/g, "\u0936\u0939\u0930"],
+      [/\bxkWv\b/g, "\u0917\u093E\u0902\u0935"]
+    ];
+    for (const [pattern, replacement] of exactReplacements) {
+      modifiedText = modifiedText.replace(pattern, replacement);
+    }
+    const array_one = [
+      "kS",
+      "ks",
+      "k",
+      "s",
+      "S",
+      "h",
+      "q",
+      "w",
+      "`",
+      "a",
+      ":",
+      "\xA1",
+      "A",
+      "vks",
+      "vkS",
+      "vk",
+      "v",
+      "bZ",
+      "b",
+      "m",
+      "\xC5",
+      "_,",
+      "d",
+      "X",
+      "p",
+      "N",
+      "t",
+      "T",
+      "V",
+      "B",
+      "M",
+      "R",
+      ".k",
+      "r",
+      "F",
+      "n",
+      "\xE8",
+      "u",
+      "i",
+      "Qq",
+      "c",
+      "Hk",
+      "e",
+      ";",
+      "j",
+      "y",
+      "o",
+      "'k",
+      "\u2019k",
+      "l",
+      "g",
+      "{k",
+      "=k",
+      "K"
+    ];
+    const array_two = [
+      "\u094C",
+      "\u094B",
+      "\u093E",
+      "\u0947",
+      "\u0948",
+      "\u0940",
+      "\u0941",
+      "\u0942",
+      "\u0943",
+      "\u0902",
+      "\u0903",
+      "\u0901",
+      "\u0964",
+      "\u0913",
+      "\u0914",
+      "\u0906",
+      "\u0905",
+      "\u0908",
+      "\u0907",
+      "\u0909",
+      "\u090A",
+      "\u090B",
+      "\u0915",
+      "\u0918",
+      "\u091A",
+      "\u091B",
+      "\u091C",
+      "\u091D",
+      "\u091F",
+      "\u0920",
+      "\u0921",
+      "\u0922",
+      "\u0923",
+      "\u0924",
+      "\u0925",
+      "\u0926",
+      "\u0927",
+      "\u0928",
+      "\u092A",
+      "\u092B",
+      "\u092C",
+      "\u092D",
+      "\u092E",
+      "\u092F",
+      "\u0930",
+      "\u0932",
+      "\u0935",
+      "\u0936",
+      "\u0937",
+      "\u0938",
+      "\u0939",
+      "\u0915\u094D\u0937",
+      "\u0924\u094D\u0930",
+      "\u091C\u094D\u091E"
+    ];
+    let position_of_i = modifiedText.indexOf("f");
+    while (position_of_i !== -1) {
+      const character_next_to_i = modifiedText.charAt(position_of_i + 1);
+      const character_after_next = modifiedText.charAt(position_of_i + 2);
+      if (character_after_next === "k" || character_after_next === "h") {
+        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + character_after_next + "f" + modifiedText.substring(position_of_i + 3);
+      } else {
+        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + "f" + modifiedText.substring(position_of_i + 2);
+      }
+      position_of_i = modifiedText.indexOf("f", position_of_i + 1);
+    }
+    for (let input_symbol_idx = 0; input_symbol_idx < array_one.length; input_symbol_idx++) {
+      const idx = array_one[input_symbol_idx];
+      const unicode_char = array_two[input_symbol_idx];
+      modifiedText = modifiedText.split(idx).join(unicode_char);
+    }
+    modifiedText = modifiedText.split("f").join("\u093F");
+    return modifiedText;
   }
   /**
    * Validate whether a string is clean Devanagari without OCR artifacts
