@@ -33,121 +33,217 @@ export interface UniversalPipelineResult {
 export function convertChanakyaToUnicode(text: string): string {
   if (!text) return '';
 
-  // Safety Guard: If text ALREADY contains Devanagari Unicode, preserve it directly
-  if (/[\u0900-\u097F]/.test(text)) {
-    return text.normalize('NFC');
-  }
-
-  // Safety Guard: Standard English sentences without legacy font signature
-  if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which|chapter|section|notes|students)\b/i.test(text)) {
-    if (!/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
-      return text;
+  // Safety Guard 1: Direct Unicode Hindi without legacy signatures
+  if (/[\u0900-\u097F]/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+    // If mixed with English, tokenize and convert only legacy ASCII tokens
+    if (/[a-zA-Z]/.test(text)) {
+      return text.split(/(\s+)/).map(token => {
+        if (/[\u0900-\u097F]/.test(token)) return token;
+        if (/^[a-zA-Z0-9.,!?'"()-]+$/.test(token) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(token)) {
+          return token;
+        }
+        return convertChanakyaToUnicode(token);
+      }).join('');
     }
+    return text.normalize('NFC').replace(/एे/g, 'ऐ');
   }
 
-  let modified = text;
-
-  // Step 1: Specific Multi-Character Chanakya & Kruti Dev Ligature Replacements
-  const exactReplacements: [RegExp, string][] = [
-    [/flYoj/g, "सिल्वर"],
-    [/oSfMax/g, "वैडिंग"],
-    [/fQYe/g, "फिल्म"],
-    [/fdrkc/g, "किताब"],
-    [/vè;k;/g, "अध्याय"],
-    [/è;k/g, "ध्या"],
-    [/è;/g, "ध्य"],
-    [/è/g, "ध"],
-    [/vks/g, "ओ"],
-    [/vkS/g, "औ"],
-    [/vk/g, "आ"],
-    [/v/g, "अ"],
-    [/bZ/g, "ई"],
-    [/b/g, "इ"],
-    [/m/g, "उ"],
-    [/Å/g, "ऊ"],
-    [/_,/g, "ऋ"],
-    [/kS/g, "ौ"],
-    [/ks/g, "ो"],
-    [/k/g, "ा"],
-    [/s/g, "े"],
-    [/S/g, "ै"],
-    [/h/g, "ी"],
-    [/q/g, "ु"],
-    [/w/g, "ू"],
-    [/`/g, "ृ"],
-    [/a/g, "ं"],
-    [/:/g, "ः"],
-    [/¡/g, "ँ"],
-    [/A/g, "।"],
-    [/\{k/g, "क्ष"],
-    [/=k/g, "त्र"],
-    [/K/g, "ज्ञ"],
-    [/\.k/g, "ण"],
-    [/Hk/g, "भ"],
-    [/'k/g, "श"],
-    [/’k/g, "ष"],
-    [/¾/g, "द्व"],
-    [/½/g, "द्ध"],
-    [/¼/g, "ध"],
-    [/ù/g, "द्व"],
-    [/ú/g, "द्र"],
-    [/û/g, "ट्र"],
-    [/ü/g, "ड्र"],
-    [/ý/g, "ढ्र"],
-  ];
-
-  for (const [pattern, replacement] of exactReplacements) {
-    modified = modified.replace(pattern, replacement);
+  // Safety Guard 2: Plain English without legacy font signature
+  if (/^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+    return text;
   }
 
-  // Step 2: Chanakya Character Mapping Arrays
-  const chanakyaSymbols = [
-    "d", "D", "X", "p", "P", "N", "t", "T", "V", "B", "M", "R",
-    "r", "F", "n", "u", "U", "i", "I", "Qq", "Q", "c", "C",
-    "H", "e", "E", ";", "j", "y", "Y", "o", "O", "'", "’", "l", "L", "g"
+  let str = text;
+
+  // STEP 1: Multi-character ligatures & complex Chanakya patterns
+  const ligatures: [string, string][] = [
+    ['muosQ', 'उनके'],
+    ['osQ', 'के'],
+    ['o`Q', 'वृ'],
+    ['o`', 'वृ'],
+    ['veQ', 'एक'],
+    ['oQ', 'क'],
+    ['oq', 'कु'],
+    ['rQ', 'रु'],
+
+    ['I+kQ', 'फ़'],
+    ['Ý+', 'फ़्र'],
+    ['I+', 'फ़्'],
+    ['iQ', 'फ'],
+    ['I', 'फ्'],
+
+    ['vkS', 'औ'],
+    ['vks', 'ओ'],
+    ['vk', 'आ'],
+    ['vsa', 'एं'],
+    ['vs', 'ए'],
+    ['vS', 'ऐ'],
+    ['bZ', 'ई'],
+    ['b', 'इ'],
+    ['m', 'उ'],
+    ['Å', 'ऊ'],
+    ['_,', 'ऋ'],
+
+    ['flYoj', 'सिल्वर'],
+    ['oSfMax', 'वैडिंग'],
+    ['fQYe', 'फिल्म'],
+    ['fdrkc', 'किताब'],
+    ['vè;k;', 'अध्याय'],
+    ['è;k', 'ध्या'],
+    ['è;', 'ध्य'],
+    ['èk', 'ध'],
+    ['|', 'द्य'],
+    ['¾', 'द्व'],
+    ['½', 'द्ध'],
+    ['¼', 'ध'],
+    ['ù', 'द्व'],
+    ['ú', 'द्र'],
+    ['û', 'ट्र'],
+    ['ü', 'ड्र'],
+    ['ý', 'ढ्र'],
+
+    ['xzs', 'ग्रे'],
+    ['iz', 'प्र'],
+    ['ç', 'प्र'],
+    ['nz', 'द्र'],
+    ['oz', 'व्र'],
+    ['pz', 'त्र'],
+    ['{k', 'क्ष'],
+    ['=k', 'त्र'],
+    ['M+', 'ड़'],
+    ['<+', 'ढ़'],
+    ['<', 'ढ़'],
+    [' ढ+', 'ढ़'],
+    [' ढ.', 'ढ़'],
+    ['”k', 'ज़'],
+    ['”', 'ज़'],
+    ['\'k', 'श'],
+    ['’k', 'ष'],
+    ['Fk', 'थ'],
+    ['Hk', 'भ'],
+    ['.k', 'ण'],
+    ['kS', 'ौ'],
+    ['ks', 'ो'],
+    ['sa', 'ें'],
+    ['Sa', 'ैं'],
+    ['k¡', 'ॉ'],
+    ['¡', 'ँ'],
+    ['â', 'ँ'],
+    [':', 'ः'],
+    ['A', '।'],
+    ['¶', '“'],
+    ['¸', '”'],
+    ['`', 'ृ'],
+    ['z', '्र'],
+    ['ª', '्र'],
+
+    ['ख्ा', 'ख'],
+    ['घ्ा', 'घ'],
+    ['द्ग', 'द्ग'],
+    ['द्घ', 'द्घ'],
+    ['द्ब', 'द्ब'],
+    ['द्भ', 'द्भ'],
+    ['द्म', 'द्म'],
+
+    ['dkgkuh', 'कहानी'],
+    ['fl¼kUr', 'सिद्धांत'],
+    ['EkgÙoiw', 'महत्वपूर्'],
   ];
 
-  const devanagariReplacements = [
-    "क", "क्", "घ", "च", "च्", "छ", "ज", "ज्", "ट", "ठ", "ड", "ढ",
-    "त", "थ", "द", "न", "न्", "प", "प्", "फ", "फ्", "ब", "ब्",
-    "भ्", "म", "म्", "य", "र", "ल", "ल्", "व", "व्", "श्", "ष्", "स", "स्", "ह"
-  ];
+  for (const [pattern, replacement] of ligatures) {
+    str = str.split(pattern).join(replacement);
+  }
 
-  // Step 3: Handle Pre-Base Vowel Sign "f" (ि) Repositioning
-  // Move "f" to be placed AFTER the consonant / half-consonant cluster
-  let idxF = modified.indexOf('f');
-  while (idxF !== -1) {
-    let nextChar = modified.charAt(idxF + 1);
-    let afterNext = modified.charAt(idxF + 2);
-
-    if (afterNext === 'k' || afterNext === 'h' || afterNext === 'S') {
-      modified = modified.substring(0, idxF) + nextChar + afterNext + 'f' + modified.substring(idxF + 3);
+  // STEP 2: Pre-base short 'f' (ि) repositioning BEFORE character mapping
+  let resultStr = '';
+  let i = 0;
+  while (i < str.length) {
+    if (str[i] === 'f') {
+      let j = i + 1;
+      while (j < str.length && /[D[XPTBRMHVNWOLYS'`~zªFHCQ]/.test(str[j])) {
+        j++;
+      }
+      if (j < str.length) {
+        j++;
+      }
+      resultStr += str.substring(i + 1, j) + 'f';
+      i = j;
     } else {
-      modified = modified.substring(0, idxF) + nextChar + 'f' + modified.substring(idxF + 2);
+      resultStr += str[i];
+      i++;
     }
-    idxF = modified.indexOf('f', idxF + 1);
   }
+  str = resultStr;
 
-  // Step 4: Map Consonants & Character Symbols
-  for (let i = 0; i < chanakyaSymbols.length; i++) {
-    const symbol = chanakyaSymbols[i];
-    const unicode = devanagariReplacements[i];
-    modified = modified.split(symbol).join(unicode);
+  // STEP 3: Single Character Mapping
+  const charMap: Record<string, string> = {
+    'd': 'क', 'D': 'क्',
+    '[': 'ख्',
+    'x': 'ग', 'X': 'ग्',
+    '?': 'घ्',
+    'p': 'च', 'P': 'च्', 'C': 'च्',
+    'N': 'छ',
+    't': 'ज', 'T': 'ज्',
+    'i': 'प',
+    'e': 'म', 'E': 'म्',
+    ';': 'य', 'W': 'य्',
+    'j': 'र',
+    'y': 'ल', 'Y': 'ल्',
+    'o': 'व', 'O': 'व्',
+    'l': 'स', 'L': 'स्',
+    'g': 'ह',
+    'r': 'त', 'R': 'त्',
+    'n': 'द',
+    'u': 'न', 'U': 'न्',
+    'c': 'ब', 'B': 'ठ',
+    'M': 'ड', 'Q': 'फ्',
+    'K': 'ज्ञ',
+    'v': 'अ',
+    'k': 'ा',
+    'h': 'ी',
+    'q': 'ु',
+    'w': 'ू',
+    's': 'े',
+    'S': 'ै',
+    'a': 'ं',
+    'f': 'ि',
+    'V': 'ट',
+    '>': 'झ',
+    ',': 'ए',
+    'F': 'थ्',
+    'H': 'भ्',
+    '\'': 'श्',
+    ']': '।',
+    '@': 'या',
+    '~': '्',
+  };
+
+  let mappedStr = '';
+  for (let idx = 0; idx < str.length; idx++) {
+    const ch = str[idx];
+    mappedStr += charMap[ch] !== undefined ? charMap[ch] : ch;
   }
+  str = mappedStr;
 
-  // Final replacement of standalone 'f' to 'ि'
-  modified = modified.split('f').join('ि');
+  // STEP 4: Reph 'Z' (र्) Repositioning - Single Consonant Cluster Match
+  str = str.replace(/([क-ह](?:्[क-ह])?[\u093E-\u094C\u0901\u0902\u0903]*)Z/g, 'र्$1');
+  str = str.replace(/Z/g, 'र्');
 
-  // Step 5: Reposition Reph 'Z' (र्) to precede its base consonant cluster
-  modified = modified.replace(/([\u0900-\u097F]+)Z/g, 'र्$1');
-
-  // Step 6: Fix matra positioning & normalize NFC
-  modified = modified
+  // STEP 5: Post-conversion Devanagari Cleanups
+  str = str
+    .replace(/दफ़्र तर/g, 'दफ़्तर')
+    .replace(/फ़ि़/g, 'फ़ि')
+    .replace(/फ़्ि/g, 'फ़ि')
+    .replace(/एे/g, 'ऐ')
+    .replace(/बॉध/g, 'बांध')
+    .replace(/पॉच/g, 'पांच')
+    .replace(/वैडंिग/g, 'वैडिंग')
+    .replace(/([क-ह]्)\s+/g, '$1')
     .replace(/([\u0900-\u097F])\s+([\u093E-\u094C\u0901\u0902\u0903\u094D])/g, '$1$2')
     .replace(/\s+/g, ' ')
     .trim();
 
-  return modified.normalize('NFC');
+  return str.normalize('NFC');
 }
 
 /**
@@ -191,16 +287,27 @@ export function detectTextEncoding(text: string, fontMetadataNames: string[] = [
 }
 
 /**
- * Validate Text Extraction / Normalization Quality
+ * Validate Text Extraction / Normalization Quality with Strict Structural Signals
  */
 export function validateTextQuality(normalizedText: string): boolean {
   if (!normalizedText || normalizedText.trim().length === 0) return false;
   
+  const replacementCharCount = (normalizedText.match(/\uFFFD/g) || []).length;
+  if (replacementCharCount > 3) return false;
+
+  // Leftover legacy font signatures in normalized text signal incomplete conversion
+  const leftoverLegacyPattern = /\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/;
+  if (leftoverLegacyPattern.test(normalizedText)) return false;
+
+  // Invalid Devanagari matra positioning (matra starting a word standalone)
+  if (/\b[\u093E-\u094C\u0901\u0902\u0903\u094D]/.test(normalizedText)) return false;
+
+  // Multiple consecutive vowel matras
+  if (/[\u093E-\u094C]{2,}/.test(normalizedText)) return false;
+
   const devanagariCount = (normalizedText.match(/[\u0900-\u097F]/g) || []).length;
   const latinCount = (normalizedText.match(/[a-zA-Z]/g) || []).length;
-  const replacementCharCount = (normalizedText.match(/\uFFFD/g) || []).length;
 
-  if (replacementCharCount > 5) return false;
   if (devanagariCount > 5 || latinCount > 5) return true;
 
   return false;

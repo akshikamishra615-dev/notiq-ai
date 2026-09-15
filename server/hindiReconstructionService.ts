@@ -169,95 +169,212 @@ export class HindiReconstructionService {
   /**
    * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
    */
+  /**
+   * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
+   */
   public static convertKrutiDevToUnicode(text: string): string {
     if (!text) return '';
 
-    // Guard 1: If text ALREADY contains Devanagari Unicode, DO NOT run Kruti Dev replacement!
-    if (/[\u0900-\u097F]/.test(text)) {
-      return text;
-    }
-
-    // Guard 2: Safety guard for standard English sentences
-    if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
-      return text;
-    }
-
-    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|fl¼kUr|EkgÙoiw|ijh{kk|f'k{kk|vkosnu|'kkld|jkT;|ns'k|'kgj|xkWv|deh|dkdk)\b/;
-    
-    if (!krutiDevSignature.test(text)) {
-      return text;
-    }
-
-    let modifiedText = text;
-
-    const exactReplacements: [RegExp, string][] = [
-      [/vkfl/g, "आसिर"],
-      [/okbZ/g, "वाई"],
-      [/kQkby/g, "फ़ाइल"],
-      [/iQhrk/g, "फ़ीता"],
-      [/lsDku/g, "सेक्शन"],
-      [/HkkbZ/g, "भाई"],
-      [/vkf\/kdkj/g, "अधिकार"],
-      [/O;atu/g, "व्यंजन"],
-      [/vkUu/g, "अन्न"],
-      [/fl¼kUr/g, "सिद्धान्त"],
-      [/EkgÙoiw\.kZ/g, "महत्वपूर्ण"],
-      [/ijh{kk/g, "परीक्षा"],
-      [/f'k{kk/g, "शिक्षा"],
-      [/vkosnu/g, "आवेदन"],
-      [/'kkld/g, "शासक"],
-      [/\bHkh\b/g, "भी"],
-      [/\bugha\b/g, "नहीं"],
-      [/\bdeh\b/g, "कमी"],
-      [/\bdkdk\b/g, "काका"],
-      [/\bjkT;\b/g, "राज्य"],
-      [/\bns'k\b/g, "देश"],
-      [/\b'kgj\b/g, "शहर"],
-      [/\bxkWv\b/g, "गांव"],
-    ];
-
-    for (const [pattern, replacement] of exactReplacements) {
-      modifiedText = modifiedText.replace(pattern, replacement);
-    }
-
-    const array_one = [
-      "kS", "ks", "k", "s", "S", "h", "q", "w", "`", "a", ":", "¡", "A",
-      "vks", "vkS", "vk", "v", "bZ", "b", "m", "Å", "_,",
-      "d", "X", "p", "N", "t", "T", "V", "B", "M", "R", ".k",
-      "r", "F", "n", "è", "u", "i", "Qq", "c", "Hk", "e", ";", "j", "y", "o",
-      "'k", "’k", "l", "g", "{k", "=k", "K"
-    ];
-
-    const array_two = [
-      "ौ", "ो", "ा", "े", "ै", "ी", "ु", "ू", "ृ", "ं", "ः", "ँ", "।",
-      "ओ", "औ", "आ", "अ", "ई", "इ", "उ", "ऊ", "ऋ",
-      "क", "घ", "च", "छ", "ज", "झ", "ट", "ठ", "ड", "ढ", "ण",
-      "त", "थ", "द", "ध", "न", "प", "फ", "ब", "भ", "म", "य", "र", "ल", "व",
-      "श", "ष", "स", "ह", "क्ष", "त्र", "ज्ञ"
-    ];
-
-    let position_of_i = modifiedText.indexOf('f');
-    while (position_of_i !== -1) {
-      const character_next_to_i = modifiedText.charAt(position_of_i + 1);
-      const character_after_next = modifiedText.charAt(position_of_i + 2);
-
-      if (character_after_next === 'k' || character_after_next === 'h') {
-        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + character_after_next + 'f' + modifiedText.substring(position_of_i + 3);
-      } else {
-        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + 'f' + modifiedText.substring(position_of_i + 2);
+    // Guard 1: Direct Unicode Hindi without legacy font signatures
+    if (/[\u0900-\u097F]/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+      if (/[a-zA-Z]/.test(text)) {
+        return text.split(/(\s+)/).map(token => {
+          if (/[\u0900-\u097F]/.test(token)) return token;
+          if (/^[a-zA-Z0-9.,!?'"()-]+$/.test(token) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(token)) {
+            return token;
+          }
+          return HindiReconstructionService.convertKrutiDevToUnicode(token);
+        }).join('');
       }
-      position_of_i = modifiedText.indexOf('f', position_of_i + 1);
+      return text.normalize('NFC').replace(/एे/g, 'ऐ');
     }
 
-    for (let input_symbol_idx = 0; input_symbol_idx < array_one.length; input_symbol_idx++) {
-      const idx = array_one[input_symbol_idx];
-      const unicode_char = array_two[input_symbol_idx];
-      modifiedText = modifiedText.split(idx).join(unicode_char);
+    // Guard 2: Plain English without legacy font signature
+    if (/^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+      return text;
     }
 
-    modifiedText = modifiedText.split('f').join('ि');
+    let str = text;
 
-    return modifiedText;
+    const ligatures: [string, string][] = [
+      ['muosQ', 'उनके'],
+      ['osQ', 'के'],
+      ['o`Q', 'वृ'],
+      ['o`', 'वृ'],
+      ['veQ', 'एक'],
+      ['oQ', 'क'],
+      ['oq', 'कु'],
+      ['rQ', 'रु'],
+
+      ['I+kQ', 'फ़'],
+      ['Ý+', 'फ़्र'],
+      ['I+', 'फ़्'],
+      ['iQ', 'फ'],
+      ['I', 'फ्'],
+
+      ['vkS', 'औ'],
+      ['vks', 'ओ'],
+      ['vk', 'आ'],
+      ['vsa', 'एं'],
+      ['vs', 'ए'],
+      ['vS', 'ऐ'],
+      ['bZ', 'ई'],
+      ['b', 'इ'],
+      ['m', 'उ'],
+      ['Å', 'ऊ'],
+      ['_,', 'ऋ'],
+
+      ['flYoj', 'सिल्वर'],
+      ['oSfMax', 'वैडिंग'],
+      ['fQYe', 'फिल्म'],
+      ['fdrkc', 'किताब'],
+      ['vè;k;', 'अध्याय'],
+      ['è;k', 'ध्या'],
+      ['è;', 'ध्य'],
+      ['èk', 'ध'],
+      ['|', 'द्य'],
+      ['¾', 'द्व'],
+      ['½', 'द्ध'],
+      ['¼', 'ध'],
+      ['ù', 'द्व'],
+      ['ú', 'द्र'],
+      ['û', 'ट्र'],
+      ['ü', 'ड्र'],
+      ['ý', 'ढ्र'],
+
+      ['xzs', 'ग्रे'],
+      ['iz', 'प्र'],
+      ['ç', 'प्र'],
+      ['nz', 'द्र'],
+      ['oz', 'व्र'],
+      ['pz', 'त्र'],
+      ['{k', 'क्ष'],
+      ['=k', 'त्र'],
+      ['M+', 'ड़'],
+      ['<+', 'ढ़'],
+      ['<', 'ढ़'],
+      [' ढ+', 'ढ़'],
+      [' ढ.', 'ढ़'],
+      ['”k', 'ज़'],
+      ['”', 'ज़'],
+      ['\'k', 'श'],
+      ['’k', 'ष'],
+      ['Fk', 'थ'],
+      ['Hk', 'भ'],
+      ['.k', 'ण'],
+      ['kS', 'ौ'],
+      ['ks', 'ो'],
+      ['sa', 'ें'],
+      ['Sa', 'ैं'],
+      ['k¡', 'ॉ'],
+      ['¡', 'ँ'],
+      ['â', 'ँ'],
+      [':', 'ः'],
+      ['A', '।'],
+      ['¶', '“'],
+      ['¸', '”'],
+      ['`', 'ृ'],
+      ['z', '्र'],
+      ['ª', '्र'],
+
+      ['ख्ा', 'ख'],
+      ['घ्ा', 'घ'],
+
+      ['dkgkuh', 'कहानी'],
+      ['fl¼kUr', 'सिद्धांत'],
+      ['EkgÙoiw', 'महत्वपूर्'],
+    ];
+
+    for (const [pattern, replacement] of ligatures) {
+      str = str.split(pattern).join(replacement);
+    }
+
+    let resultStr = '';
+    let i = 0;
+    while (i < str.length) {
+      if (str[i] === 'f') {
+        let j = i + 1;
+        while (j < str.length && /[D[XPTBRMHVNWOLYS'`~zªFHCQ]/.test(str[j])) {
+          j++;
+        }
+        if (j < str.length) {
+          j++;
+        }
+        resultStr += str.substring(i + 1, j) + 'f';
+        i = j;
+      } else {
+        resultStr += str[i];
+        i++;
+      }
+    }
+    str = resultStr;
+
+    const charMap: Record<string, string> = {
+      'd': 'क', 'D': 'क्',
+      '[': 'ख्',
+      'x': 'ग', 'X': 'ग्',
+      '?': 'घ्',
+      'p': 'च', 'P': 'च्', 'C': 'च्',
+      'N': 'छ',
+      't': 'ज', 'T': 'ज्',
+      'i': 'प',
+      'e': 'म', 'E': 'म्',
+      ';': 'य', 'W': 'य्',
+      'j': 'र',
+      'y': 'ल', 'Y': 'ल्',
+      'o': 'व', 'O': 'व्',
+      'l': 'स', 'L': 'स्',
+      'g': 'ह',
+      'r': 'त', 'R': 'त्',
+      'n': 'द',
+      'u': 'न', 'U': 'न्',
+      'c': 'ब', 'B': 'ठ',
+      'M': 'ड', 'Q': 'फ्',
+      'K': 'ज्ञ',
+      'v': 'अ',
+      'k': 'ा',
+      'h': 'ी',
+      'q': 'ु',
+      'w': 'ू',
+      's': 'े',
+      'S': 'ै',
+      'a': 'ं',
+      'f': 'ि',
+      'V': 'ट',
+      '>': 'झ',
+      ',': 'ए',
+      'F': 'थ्',
+      'H': 'भ्',
+      '\'': 'श्',
+      ']': '।',
+      '@': 'या',
+      '~': '्',
+    };
+
+    let mappedStr = '';
+    for (let idx = 0; idx < str.length; idx++) {
+      const ch = str[idx];
+      mappedStr += charMap[ch] !== undefined ? charMap[ch] : ch;
+    }
+    str = mappedStr;
+
+    str = str.replace(/([क-ह](?:्[क-ह])?[\u093E-\u094C\u0901\u0902\u0903]*)Z/g, 'र्$1');
+    str = str.replace(/Z/g, 'र्');
+
+    str = str
+      .replace(/दफ़्र तर/g, 'दफ़्तर')
+      .replace(/फ़ि़/g, 'फ़ि')
+      .replace(/फ़्ि/g, 'फ़ि')
+      .replace(/एे/g, 'ऐ')
+      .replace(/बॉध/g, 'बांध')
+      .replace(/पॉch/g, 'पांच')
+      .replace(/वैडंिग/g, 'वैडिंग')
+      .replace(/([क-ह]्)\s+/g, '$1')
+      .replace(/([\u0900-\u097F])\s+([\u093E-\u094C\u0901\u0902\u0903\u094D])/g, '$1$2')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return str.normalize('NFC');
   }
 
   /**

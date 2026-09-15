@@ -30677,7 +30677,7 @@ function cleanBackendString(text) {
 }
 
 // server/hindiReconstructionService.ts
-var HindiReconstructionService = class {
+var HindiReconstructionService = class _HindiReconstructionService {
   /**
    * Complete Multi-Stage Hindi OCR Reconstruction Pipeline
    */
@@ -30802,177 +30802,196 @@ var HindiReconstructionService = class {
   /**
    * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
    */
+  /**
+   * Detect & convert legacy Kruti Dev / DevLys / Chanakya font text into standard Devanagari Unicode
+   */
   static convertKrutiDevToUnicode(text) {
     if (!text) return "";
-    if (/[\u0900-\u097F]/.test(text)) {
-      return text;
-    }
-    if (/\b(the|and|this|that|with|from|have|for|were|where|what|when|which)\b/i.test(text)) {
-      return text;
-    }
-    const krutiDevSignature = /\b(vkfl|okbZ|kQkby|iQhrk|lsDku|HkkbZ|vkf\/kdkj|O;atu|vkUu|fl¼kUr|EkgÙoiw|ijh{kk|f'k{kk|vkosnu|'kkld|jkT;|ns'k|'kgj|xkWv|deh|dkdk)\b/;
-    if (!krutiDevSignature.test(text)) {
-      return text;
-    }
-    let modifiedText = text;
-    const exactReplacements = [
-      [/vkfl/g, "\u0906\u0938\u093F\u0930"],
-      [/okbZ/g, "\u0935\u093E\u0908"],
-      [/kQkby/g, "\u092B\u093C\u093E\u0907\u0932"],
-      [/iQhrk/g, "\u092B\u093C\u0940\u0924\u093E"],
-      [/lsDku/g, "\u0938\u0947\u0915\u094D\u0936\u0928"],
-      [/HkkbZ/g, "\u092D\u093E\u0908"],
-      [/vkf\/kdkj/g, "\u0905\u0927\u093F\u0915\u093E\u0930"],
-      [/O;atu/g, "\u0935\u094D\u092F\u0902\u091C\u0928"],
-      [/vkUu/g, "\u0905\u0928\u094D\u0928"],
-      [/fl¼kUr/g, "\u0938\u093F\u0926\u094D\u0927\u093E\u0928\u094D\u0924"],
-      [/EkgÙoiw\.kZ/g, "\u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D\u0923"],
-      [/ijh{kk/g, "\u092A\u0930\u0940\u0915\u094D\u0937\u093E"],
-      [/f'k{kk/g, "\u0936\u093F\u0915\u094D\u0937\u093E"],
-      [/vkosnu/g, "\u0906\u0935\u0947\u0926\u0928"],
-      [/'kkld/g, "\u0936\u093E\u0938\u0915"],
-      [/\bHkh\b/g, "\u092D\u0940"],
-      [/\bugha\b/g, "\u0928\u0939\u0940\u0902"],
-      [/\bdeh\b/g, "\u0915\u092E\u0940"],
-      [/\bdkdk\b/g, "\u0915\u093E\u0915\u093E"],
-      [/\bjkT;\b/g, "\u0930\u093E\u091C\u094D\u092F"],
-      [/\bns'k\b/g, "\u0926\u0947\u0936"],
-      [/\b'kgj\b/g, "\u0936\u0939\u0930"],
-      [/\bxkWv\b/g, "\u0917\u093E\u0902\u0935"]
-    ];
-    for (const [pattern, replacement] of exactReplacements) {
-      modifiedText = modifiedText.replace(pattern, replacement);
-    }
-    const array_one = [
-      "kS",
-      "ks",
-      "k",
-      "s",
-      "S",
-      "h",
-      "q",
-      "w",
-      "`",
-      "a",
-      ":",
-      "\xA1",
-      "A",
-      "vks",
-      "vkS",
-      "vk",
-      "v",
-      "bZ",
-      "b",
-      "m",
-      "\xC5",
-      "_,",
-      "d",
-      "X",
-      "p",
-      "N",
-      "t",
-      "T",
-      "V",
-      "B",
-      "M",
-      "R",
-      ".k",
-      "r",
-      "F",
-      "n",
-      "\xE8",
-      "u",
-      "i",
-      "Qq",
-      "c",
-      "Hk",
-      "e",
-      ";",
-      "j",
-      "y",
-      "o",
-      "'k",
-      "\u2019k",
-      "l",
-      "g",
-      "{k",
-      "=k",
-      "K"
-    ];
-    const array_two = [
-      "\u094C",
-      "\u094B",
-      "\u093E",
-      "\u0947",
-      "\u0948",
-      "\u0940",
-      "\u0941",
-      "\u0942",
-      "\u0943",
-      "\u0902",
-      "\u0903",
-      "\u0901",
-      "\u0964",
-      "\u0913",
-      "\u0914",
-      "\u0906",
-      "\u0905",
-      "\u0908",
-      "\u0907",
-      "\u0909",
-      "\u090A",
-      "\u090B",
-      "\u0915",
-      "\u0918",
-      "\u091A",
-      "\u091B",
-      "\u091C",
-      "\u091D",
-      "\u091F",
-      "\u0920",
-      "\u0921",
-      "\u0922",
-      "\u0923",
-      "\u0924",
-      "\u0925",
-      "\u0926",
-      "\u0927",
-      "\u0928",
-      "\u092A",
-      "\u092B",
-      "\u092C",
-      "\u092D",
-      "\u092E",
-      "\u092F",
-      "\u0930",
-      "\u0932",
-      "\u0935",
-      "\u0936",
-      "\u0937",
-      "\u0938",
-      "\u0939",
-      "\u0915\u094D\u0937",
-      "\u0924\u094D\u0930",
-      "\u091C\u094D\u091E"
-    ];
-    let position_of_i = modifiedText.indexOf("f");
-    while (position_of_i !== -1) {
-      const character_next_to_i = modifiedText.charAt(position_of_i + 1);
-      const character_after_next = modifiedText.charAt(position_of_i + 2);
-      if (character_after_next === "k" || character_after_next === "h") {
-        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + character_after_next + "f" + modifiedText.substring(position_of_i + 3);
-      } else {
-        modifiedText = modifiedText.substring(0, position_of_i) + character_next_to_i + "f" + modifiedText.substring(position_of_i + 2);
+    if (/[\u0900-\u097F]/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+      if (/[a-zA-Z]/.test(text)) {
+        return text.split(/(\s+)/).map((token) => {
+          if (/[\u0900-\u097F]/.test(token)) return token;
+          if (/^[a-zA-Z0-9.,!?'"()-]+$/.test(token) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(token)) {
+            return token;
+          }
+          return _HindiReconstructionService.convertKrutiDevToUnicode(token);
+        }).join("");
       }
-      position_of_i = modifiedText.indexOf("f", position_of_i + 1);
+      return text.normalize("NFC").replace(/एे/g, "\u0910");
     }
-    for (let input_symbol_idx = 0; input_symbol_idx < array_one.length; input_symbol_idx++) {
-      const idx = array_one[input_symbol_idx];
-      const unicode_char = array_two[input_symbol_idx];
-      modifiedText = modifiedText.split(idx).join(unicode_char);
+    if (/^[a-zA-Z0-9\s.,!?'"()-]+$/.test(text) && !/\b(flYoj|oSfMax|fQYe|vè;k;|dkgkuh|fl¼kUr|EkgÙoiw|vkfl|okbZ|kQkby|iQhrk|lsDku)\b/.test(text)) {
+      return text;
     }
-    modifiedText = modifiedText.split("f").join("\u093F");
-    return modifiedText;
+    let str = text;
+    const ligatures = [
+      ["muosQ", "\u0909\u0928\u0915\u0947"],
+      ["osQ", "\u0915\u0947"],
+      ["o`Q", "\u0935\u0943"],
+      ["o`", "\u0935\u0943"],
+      ["veQ", "\u090F\u0915"],
+      ["oQ", "\u0915"],
+      ["oq", "\u0915\u0941"],
+      ["rQ", "\u0930\u0941"],
+      ["I+kQ", "\u092B\u093C"],
+      ["\xDD+", "\u092B\u093C\u094D\u0930"],
+      ["I+", "\u092B\u093C\u094D"],
+      ["iQ", "\u092B"],
+      ["I", "\u092B\u094D"],
+      ["vkS", "\u0914"],
+      ["vks", "\u0913"],
+      ["vk", "\u0906"],
+      ["vsa", "\u090F\u0902"],
+      ["vs", "\u090F"],
+      ["vS", "\u0910"],
+      ["bZ", "\u0908"],
+      ["b", "\u0907"],
+      ["m", "\u0909"],
+      ["\xC5", "\u090A"],
+      ["_,", "\u090B"],
+      ["flYoj", "\u0938\u093F\u0932\u094D\u0935\u0930"],
+      ["oSfMax", "\u0935\u0948\u0921\u093F\u0902\u0917"],
+      ["fQYe", "\u092B\u093F\u0932\u094D\u092E"],
+      ["fdrkc", "\u0915\u093F\u0924\u093E\u092C"],
+      ["v\xE8;k;", "\u0905\u0927\u094D\u092F\u093E\u092F"],
+      ["\xE8;k", "\u0927\u094D\u092F\u093E"],
+      ["\xE8;", "\u0927\u094D\u092F"],
+      ["\xE8k", "\u0927"],
+      ["|", "\u0926\u094D\u092F"],
+      ["\xBE", "\u0926\u094D\u0935"],
+      ["\xBD", "\u0926\u094D\u0927"],
+      ["\xBC", "\u0927"],
+      ["\xF9", "\u0926\u094D\u0935"],
+      ["\xFA", "\u0926\u094D\u0930"],
+      ["\xFB", "\u091F\u094D\u0930"],
+      ["\xFC", "\u0921\u094D\u0930"],
+      ["\xFD", "\u0922\u094D\u0930"],
+      ["xzs", "\u0917\u094D\u0930\u0947"],
+      ["iz", "\u092A\u094D\u0930"],
+      ["\xE7", "\u092A\u094D\u0930"],
+      ["nz", "\u0926\u094D\u0930"],
+      ["oz", "\u0935\u094D\u0930"],
+      ["pz", "\u0924\u094D\u0930"],
+      ["{k", "\u0915\u094D\u0937"],
+      ["=k", "\u0924\u094D\u0930"],
+      ["M+", "\u0921\u093C"],
+      ["<+", "\u0922\u093C"],
+      ["<", "\u0922\u093C"],
+      [" \u0922+", "\u0922\u093C"],
+      [" \u0922.", "\u0922\u093C"],
+      ["\u201Dk", "\u091C\u093C"],
+      ["\u201D", "\u091C\u093C"],
+      ["'k", "\u0936"],
+      ["\u2019k", "\u0937"],
+      ["Fk", "\u0925"],
+      ["Hk", "\u092D"],
+      [".k", "\u0923"],
+      ["kS", "\u094C"],
+      ["ks", "\u094B"],
+      ["sa", "\u0947\u0902"],
+      ["Sa", "\u0948\u0902"],
+      ["k\xA1", "\u0949"],
+      ["\xA1", "\u0901"],
+      ["\xE2", "\u0901"],
+      [":", "\u0903"],
+      ["A", "\u0964"],
+      ["\xB6", "\u201C"],
+      ["\xB8", "\u201D"],
+      ["`", "\u0943"],
+      ["z", "\u094D\u0930"],
+      ["\xAA", "\u094D\u0930"],
+      ["\u0916\u094D\u093E", "\u0916"],
+      ["\u0918\u094D\u093E", "\u0918"],
+      ["dkgkuh", "\u0915\u0939\u093E\u0928\u0940"],
+      ["fl\xBCkUr", "\u0938\u093F\u0926\u094D\u0927\u093E\u0902\u0924"],
+      ["Ekg\xD9oiw", "\u092E\u0939\u0924\u094D\u0935\u092A\u0942\u0930\u094D"]
+    ];
+    for (const [pattern, replacement] of ligatures) {
+      str = str.split(pattern).join(replacement);
+    }
+    let resultStr = "";
+    let i = 0;
+    while (i < str.length) {
+      if (str[i] === "f") {
+        let j = i + 1;
+        while (j < str.length && /[D[XPTBRMHVNWOLYS'`~zªFHCQ]/.test(str[j])) {
+          j++;
+        }
+        if (j < str.length) {
+          j++;
+        }
+        resultStr += str.substring(i + 1, j) + "f";
+        i = j;
+      } else {
+        resultStr += str[i];
+        i++;
+      }
+    }
+    str = resultStr;
+    const charMap = {
+      "d": "\u0915",
+      "D": "\u0915\u094D",
+      "[": "\u0916\u094D",
+      "x": "\u0917",
+      "X": "\u0917\u094D",
+      "?": "\u0918\u094D",
+      "p": "\u091A",
+      "P": "\u091A\u094D",
+      "C": "\u091A\u094D",
+      "N": "\u091B",
+      "t": "\u091C",
+      "T": "\u091C\u094D",
+      "i": "\u092A",
+      "e": "\u092E",
+      "E": "\u092E\u094D",
+      ";": "\u092F",
+      "W": "\u092F\u094D",
+      "j": "\u0930",
+      "y": "\u0932",
+      "Y": "\u0932\u094D",
+      "o": "\u0935",
+      "O": "\u0935\u094D",
+      "l": "\u0938",
+      "L": "\u0938\u094D",
+      "g": "\u0939",
+      "r": "\u0924",
+      "R": "\u0924\u094D",
+      "n": "\u0926",
+      "u": "\u0928",
+      "U": "\u0928\u094D",
+      "c": "\u092C",
+      "B": "\u0920",
+      "M": "\u0921",
+      "Q": "\u092B\u094D",
+      "K": "\u091C\u094D\u091E",
+      "v": "\u0905",
+      "k": "\u093E",
+      "h": "\u0940",
+      "q": "\u0941",
+      "w": "\u0942",
+      "s": "\u0947",
+      "S": "\u0948",
+      "a": "\u0902",
+      "f": "\u093F",
+      "V": "\u091F",
+      ">": "\u091D",
+      ",": "\u090F",
+      "F": "\u0925\u094D",
+      "H": "\u092D\u094D",
+      "'": "\u0936\u094D",
+      "]": "\u0964",
+      "@": "\u092F\u093E",
+      "~": "\u094D"
+    };
+    let mappedStr = "";
+    for (let idx = 0; idx < str.length; idx++) {
+      const ch = str[idx];
+      mappedStr += charMap[ch] !== void 0 ? charMap[ch] : ch;
+    }
+    str = mappedStr;
+    str = str.replace(/([क-ह](?:्[क-ह])?[\u093E-\u094C\u0901\u0902\u0903]*)Z/g, "\u0930\u094D$1");
+    str = str.replace(/Z/g, "\u0930\u094D");
+    str = str.replace(/दफ़्र तर/g, "\u0926\u092B\u093C\u094D\u0924\u0930").replace(/फ़ि़/g, "\u092B\u093C\u093F").replace(/फ़्ि/g, "\u092B\u093C\u093F").replace(/एे/g, "\u0910").replace(/बॉध/g, "\u092C\u093E\u0902\u0927").replace(/पॉch/g, "\u092A\u093E\u0902\u091A").replace(/वैडंिग/g, "\u0935\u0948\u0921\u093F\u0902\u0917").replace(/([क-ह]्)\s+/g, "$1").replace(/([\u0900-\u097F])\s+([\u093E-\u094C\u0901\u0902\u0903\u094D])/g, "$1$2").replace(/\s+/g, " ").trim();
+    return str.normalize("NFC");
   }
   /**
    * Validate whether a string is clean Devanagari without OCR artifacts
