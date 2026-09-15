@@ -75,7 +75,7 @@ export async function translateText(
   try {
     const gtxUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${src}&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 7500);
 
     const response = await fetch(gtxUrl, { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -106,7 +106,7 @@ export async function translateText(
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${langPair}`;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 6500);
 
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
@@ -142,6 +142,8 @@ function fallbackTranslate(text: string, targetLang: 'hi' | 'en'): string {
     });
 
     result = result
+      .replace(/\bthis is an important chapter\b/gi, 'यह एक महत्वपूर्ण अध्याय है।')
+      .replace(/\bimportant chapter\b/gi, 'महत्वपूर्ण अध्याय')
       .replace(/\bis defined as\b/gi, 'को परिभाषित किया गया है')
       .replace(/\brefers to\b/gi, 'का तात्पर्य है')
       .replace(/\bis known as\b/gi, 'के रूप में जाना जाता है')
@@ -158,7 +160,21 @@ function fallbackTranslate(text: string, targetLang: 'hi' | 'en'): string {
   } else {
     let result = text;
 
+    Object.entries(EDUCATIONAL_DICTIONARY).forEach(([_enTerm, dict]) => {
+      if (dict.hi && dict.en) {
+        result = result.replace(new RegExp(dict.hi, 'g'), dict.en);
+      }
+    });
+
     result = result
+      .replace(/भारत एक महान देश है।?/g, 'India is a great country.')
+      .replace(/सिल्वर वैडिंग/g, 'Silver Wedding')
+      .replace(/मुख्य अवधारणाएं/g, 'Key Concepts')
+      .replace(/महत्वपूर्ण बिंदु/g, 'Important Points')
+      .replace(/अध्याय सारांश/g, 'Chapter Summary')
+      .replace(/अभ्यास प्रश्न/g, 'Practice Questions')
+      .replace(/उत्तर कुंजी/g, 'Answer Key')
+      .replace(/यह एक महत्वपूर्ण अध्याय है।?/g, 'This is an important chapter.')
       .replace(/को परिभाषित किया गया है/g, 'is defined as')
       .replace(/का तात्पर्य है/g, 'refers to')
       .replace(/के रूप में जाना जाता है/g, 'is known as')
@@ -178,7 +194,22 @@ export async function translateBatch(
   targetLang: 'hi' | 'en',
   sourceLang?: 'hi' | 'en'
 ): Promise<string[]> {
-  return Promise.all(texts.map(t => translateText(t, targetLang, sourceLang)));
+  if (texts.length === 0) return [];
+
+  const results: string[] = new Array(texts.length);
+  const BATCH_CONCURRENCY = 5;
+
+  for (let i = 0; i < texts.length; i += BATCH_CONCURRENCY) {
+    const slice = texts.slice(i, i + BATCH_CONCURRENCY);
+    const translatedSlice = await Promise.all(
+      slice.map(t => translateText(t, targetLang, sourceLang))
+    );
+    for (let j = 0; j < translatedSlice.length; j++) {
+      results[i + j] = translatedSlice[j];
+    }
+  }
+
+  return results;
 }
 
 /**

@@ -895,8 +895,8 @@ export async function generateStickyNotesFromText(
   if (onProgress) onProgress(45, `Synthesizing NCERT ${mode.toUpperCase()} Notes for "${realChapterTitle}"...`);
   
   let storyNarrative = generateStoryStyleNarrative(cleanRawText, realChapterTitle, targetLanguage);
-  if (targetLanguage === 'hi' && detectedLanguage === 'en') {
-    storyNarrative = await translateText(storyNarrative, 'hi', 'en');
+  if (targetLanguage !== detectedLanguage) {
+    storyNarrative = await translateText(storyNarrative, targetLanguage, detectedLanguage);
   }
 
   let rawNotes: StickyNote[];
@@ -947,7 +947,7 @@ export async function generateStickyNotesFromText(
     notes = uniqueNotes;
   }
 
-  if (targetLanguage !== detectedLanguage && detectedLanguage === 'en' && targetLanguage === 'hi') {
+  if (targetLanguage !== detectedLanguage) {
     notes = await translateStickyNotes(notes, targetLanguage, detectedLanguage, onProgress);
   }
 
@@ -955,8 +955,8 @@ export async function generateStickyNotesFromText(
 
   if (onProgress) onProgress(80, 'Extracting essential definitions & formulas...');
   let highlights = extractHighlightsFromText(cleanRawText, targetLanguage);
-  if (targetLanguage === 'hi' && detectedLanguage === 'en') {
-    highlights = await translateHighlights(highlights, 'hi', 'en');
+  if (targetLanguage !== detectedLanguage) {
+    highlights = await translateHighlights(highlights, targetLanguage, detectedLanguage);
   }
 
   let flashcards: Flashcard[] = [];
@@ -965,18 +965,18 @@ export async function generateStickyNotesFromText(
   // Generate flashcards and quiz only if explicitly requested or in full summary
   if (mode === 'smart-summary') {
     flashcards = generateFlashcardsFromNotes(notes, targetLanguage);
-    if (targetLanguage === 'hi' && detectedLanguage === 'en') {
-      flashcards = await translateFlashcards(flashcards, 'hi', 'en');
+    if (targetLanguage !== detectedLanguage) {
+      flashcards = await translateFlashcards(flashcards, targetLanguage, detectedLanguage);
     }
     quiz = generateQuizFromNotes(notes, targetLanguage);
-    if (targetLanguage === 'hi' && detectedLanguage === 'en') {
-      quiz = await translateQuizQuestions(quiz, 'hi', 'en');
+    if (targetLanguage !== detectedLanguage) {
+      quiz = await translateQuizQuestions(quiz, targetLanguage, detectedLanguage);
     }
   }
 
   let mindMap = generateMindMapFromNotes(realChapterTitle, notes);
-  if (targetLanguage === 'hi' && detectedLanguage === 'en') {
-    mindMap = await translateMindMap(mindMap, 'hi', 'en');
+  if (targetLanguage !== detectedLanguage) {
+    mindMap = await translateMindMap(mindMap, targetLanguage, detectedLanguage);
   }
 
   if (onProgress) onProgress(100, 'Master AI Output Engine complete!');
